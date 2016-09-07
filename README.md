@@ -1,0 +1,2 @@
+# compneuro
+computational neuroscience exs
