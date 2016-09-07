@@ -1,0 +1,46 @@
+% params
+
+r0=lambda*dt; % firing rate
+tref=0;
+
+% 10 neurons with refractory period
+y=zeros(10,N);
+
+for j=1:10
+    % insulate time courses
+    rt=r0; 
+    t=0; % time of spike
+    for i=1:N 
+        if rand<rt;  % if spike
+            y(j,i)=1; 
+            rt=0; 
+            tref=0; % NSAT
+        else
+            % tref is a time constant that controls the refractory recovery rate
+            tref= tref+ (r0-rt); % NSAT
+            treflog(i)=tref;
+            % r0 is the original firing rate
+            % (1-exp(n)) approaches 1 as n approaches -inf
+            % I infer that we need to use -tref
+            rt= r0 *(1-exp(-tref)); % NSAT
+            rtlog(i)=rt;
+        end
+    end
+end
+
+
+%Visualize sparsity pattern
+spy(y)
+axis square
+
+%compute coefficient of variation
+
+y=y(1,:); % first spike train
+times=find(y); % returns index of non-zero items in y
+isi(1)=times(1); % easier to keep it outside of loop
+
+%compute interspike intervals
+for i=2:length(times)
+    isi(i)=times(i)-times(i-1);% interval between spikes i-1 and i
+end
+
