@@ -1,4 +1,20 @@
 hints
-change t^(n-1) to base e
-taylor expansion of exponential around max
-approximate factorial (stirling's)
+1. change t^(n-1) to base e
+2. taylor expansion of exponential around max
+3. approximate factorial (stirling's)
+
+hint 1:
+
+t^(n-1) to base e
+
+find a number y that t^(n-1)=e^y
+
+t^(n-1)=e^y
+ln(t^(n-1))=ln(e^y)
+(n-1)ln(t)=yln(e)
+y=(n-1)ln(t)/ln(e)
+y=(n-1)ln(t)
+
+t^(n-1)=e^((n-1)ln(t)
+
+hint 2
