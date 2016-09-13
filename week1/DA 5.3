@@ -1,9 +1,12 @@
+
 Hints:
 integrate timestep by timestep because the diff eq is not solvable analytically
 eulers' int:
 dy/dx= f(x,v)
 v_n+1 = v_n + h*f(v_n) | (h is the change in time)
-
+---------
+2 solutions follow
+---------
 Niccolo's solution (don't just copy the code)
 
 %author=Niccolo Calcini
@@ -51,3 +54,56 @@ log_arg = (membrane_resistance*injected_current_intensity + v_rest - v_reset)/(m
 firing_rate_isi = 1/(membrane_time_constant*log(log_arg));
 
 end
+-----------
+%author=filippos
+%not done yet
+%%
+% set params
+
+Vrest=-70; %mV
+Vreset=-80;
+Rm=10; % membrane_resistence in MOhm
+Tm= 10; % membrane time constant (Rm*Cm)
+Cm=Tm/Rm; % membrane capacitance
+eL=Vrest; % only for reading ease, value remains constant
+Vth=-54; % spiking threshold
+Vreset=-80; % mV of post activation potential
+simLength=500; % simulation length
+injLength=300; % I injection length
+spikeLog=zeros(simLength);
+
+I=0.1;
+
+
+%% preproc env
+
+% membrane potential timeseries
+vTime=zeros(1,simLength); % init timeline
+vTime(1)=Vrest; % init membrane potential at rest
+
+% injection current timeseries
+% Cut the difference of simLength and injLength in two and put it around
+% injLength to center it
+Itime=[zeros(1,(simLength-injLength)/2) ones(1,injLength) ...
+    zeros(1,(simLength-injLength)/2)];
+
+Itime=Itime*I; % Apply current to sim timeseries
+
+%% apply eq 5.8 Tm*(dV/dt)= eL-V + Rm*I
+
+% get temporal derivative
+% dV/dt= (eL-V + Rm*I)/Tm
+dVdt=@(V,I)((eL-V + Rm*I)/Tm);
+
+%% run simulation
+
+for i=2:(simlength)
+    vTime(i)=vTime(i-1)+ dVdt(vTime(i-1),Itime(i-1));
+    if vTime(i)>=Vth
+        spikeLog(i)=1;
+        vTime(i)=Vreset;
+    end
+end
+
+figure;
+
