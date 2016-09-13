@@ -1,4 +1,53 @@
+Hints
 integrate timestep by timestep because the diff eq is not solvable analytically
 eulers' int:
 dy/dx= f(x,v)
 v_n+1 = v_n + h*f(v_n) | (h is the change in time)
+
+Niccolo's solution (don't just copy the code)
+
+%author=Niccolo Calcini
+
+function [firing_rate, firing_rate_isi] = exercise_5_3 (injected_current_intensity)
+%% Setting parameters...
+membrane_resistance = 10;               % MOhm
+membrane_time_constant = 10;            % ms
+v_rest = -70;                           % mV
+v_spike_threshold = -54;                % mV
+v_reset = -80;                          % mV
+current_time_length = 300;              % ms
+simulation_length = 500;                % ms
+
+if nargin == 0
+    injected_current_intensity = 2;     % uA
+end
+
+%% Setting current stimulation...
+current_stimulation = zeros(1, simulation_length);
+tmp = (simulation_length-current_time_length)/2;
+current_stimulation(1, (tmp:(simulation_length - tmp - 1))) = ones(1, current_time_length);
+current_stimulation = current_stimulation.*injected_current_intensity;
+
+%% Simulating potential...
+v_array = zeros(1, simulation_length);
+v_discrete_time_derivative = zeros(1, simulation_length);   % This is not really the time derivative, as it doesn't take into account the change due to the spike production!
+v_array(1,1) = v_rest;
+firing_count = 0;
+
+for i_time = 1:(simulation_length-1)
+    if (v_array(1, i_time) >= v_spike_threshold)    % When v reaches threshold, fire!
+        v_array(1, i_time) = v_reset;
+        firing_count = firing_count + 1;    
+    end
+    v_discrete_time_derivative(1, i_time) = (v_rest - v_array(1, i_time) + membrane_resistance*current_stimulation(1, i_time))/membrane_time_constant;
+    v_array(1, i_time+1) = v_array(1, i_time) + v_discrete_time_derivative(1, i_time);
+end
+% figure(1); plot(v_discrete_time_derivative); title('Potential "time derivative".'); ylabel('dV/dT (mV/ms)'); xlabel('Time (ms)'); 
+figure(); plot(v_array); title('Potential.'); ylabel('V (mV)'); xlabel('Time (ms)'); 
+
+firing_rate = firing_count/current_time_length;
+
+log_arg = (membrane_resistance*injected_current_intensity + v_rest - v_reset)/(membrane_resistance*injected_current_intensity + v_rest - v_spike_threshold);
+firing_rate_isi = 1/(membrane_time_constant*log(log_arg));
+
+end
