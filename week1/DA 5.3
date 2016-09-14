@@ -114,3 +114,59 @@ figure;
 plot(Vtime)
 title(sprintf('Membrane V with I=%f: spikerate = %f, Risi=%f',...
     I, spikeRate, Risi));
+
+	
+% Third approach by Athena
+% nothing new (based on Niccolo's)
+% I just used different variables/comments, added plots and implemented a loop to run several tests
+
+v_rest = - 70;  % mV (resting potential of the membrane)
+v_reset = - 80; % mV (after the neuron fires, it resets to this value)
+v_th = - 54;    % mV (threshold)
+
+r_m = 10;       % MΩ (total membrane resistance)
+tau_m = 10;     % ms (membrane time constant)
+sim_len = 500;  % ms (simulation length) - assumed delta(t) = 1 ms
+i_e = 0;        % μA (the current)
+
+
+figure('units','normalized','outerposition',[0 0 1 1]);
+for i_e =2:.3:5.3 % repeat the simulation for different currents
+
+    % initialise the simulation %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % the pulse should be 300-ms-long and centered in a 500-ms-long simulation
+    current = zeros(1,sim_len);
+    current(1,101:400) = i_e;
+
+    % the simulation contains information about the voltage in each delta(t)
+    v = zeros(1,sim_len); 
+    v(1,1) = v_rest;
+    num_spikes = 0; % the number of spikes that have occured
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    % run the simulation
+    for c = 2:sim_len
+        p = c - 1; % previous index
+        
+        % fire a spike if the threshold was reached in the previous dt
+        if v(1,p) >= v_th
+            v(1,p) = v_reset;
+            num_spikes = num_spikes + 1;
+        end
+        
+        % calculate the voltage at the next dt, based on the equation 5.8
+        v(1,c) = v(1,p) + (v_rest - v(1,p) + r_m * current(1,c)) / tau_m;
+    end
+    
+    % determine the firing rate of the model
+    fire_rate = num_spikes / 300;
+    
+    % plot the activity of the neuron during the 500 ms
+    subplot(3,4,(i_e-2)*10/3+1); plot(1:500,v); 
+    title(sprintf('Ie=%.2f, fire rate=%.3f',i_e,fire_rate)); 
+    xlabel('Time (ms)'); ylabel('Voltage (mV)'); 
+
+    disp(sprintf('The fire rate for Ie=%f is %f.',i_e,fire_rate));
+end
+
+clear c; clear p;
