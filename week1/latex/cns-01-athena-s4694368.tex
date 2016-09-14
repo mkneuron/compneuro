@@ -1,0 +1,199 @@
+\documentclass[notitlepage,12pt]{article}
+%\usepackage[sc,sf,small]{titlesec}
+%\usepackage[table]{xcolor}
+\usepackage{caption}
+\usepackage{float}
+\captionsetup{labelformat=empty}
+\usepackage[table,xcdraw]{xcolor}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage[export]{adjustbox}
+\usepackage{listings}
+\lstset{
+	breaklines=true,
+	postbreak=\raisebox{0ex}[0ex][0ex]{\ensuremath{\color{red}\hookrightarrow\space}}
+}
+\definecolor{pa}{RGB}{196, 0, 43} %color for player A
+\definecolor{pb}{RGB}{0, 145, 194} %color for player B
+\definecolor{mygreen}{RGB}{28,172,0} % color values Red, Green, Blue
+\definecolor{mylilas}{RGB}{170,55,241}
+
+\usepackage[margin=2cm]{geometry}
+\usepackage{listings}
+%\usepackage{breqn}
+\usepackage{amsmath}
+
+\begin{document}
+	
+	\lstset{language=Matlab,%
+		%basicstyle=\color{red},
+		breaklines=true,%
+		morekeywords={matlab2tikz},
+		keywordstyle=\color{blue},%
+		morekeywords=[2]{1}, keywordstyle=[2]{\color{black}},
+		identifierstyle=\color{black},%
+		stringstyle=\color{mylilas},
+		commentstyle=\color{mygreen},%
+		showstringspaces=false,%without this there will be a symbol in the places where there is a space
+		%numbers=left,%
+		%numberstyle={\tiny \color{black}},% size of the numbers
+		%numbersep=9pt, % this defines how far the numbers are from the text
+		emph=[1]{for,end,break},emphstyle=[1]\color{red}, %some words to emphasise
+		%emph=[2]{word1,word2}, emphstyle=[2]{style},    
+	}
+	
+	% Title and details
+	\title{Computational neuroscience - First assignment}
+	\date{\today}
+	
+	\author{{\large Athena Iakovidi}\\Faculty of Social Sciences\\a.iakovidi@student.ru.nl}
+	
+	\maketitle
+	
+	\newcommand{\Laplace}{\mathcal{L}}
+	
+	% Start of main text
+	\section*{Handouts: Chapter 2, Exercise 1}
+	I will use the Gamma distribution as given in Chapter 2.
+	\begin{equation}
+	I_N(t) = \dfrac{\lambda^Nt^{N-1}}{(N-1)!}e^{-\lambda t}
+	\end{equation}
+	
+	We know that $t > 0$; thus, we can use the identity $x = e^{\ln x}, x > 0$
+	\begin{equation*}
+	t^{N-1} = e^{\ln t^{N-1}}
+	\end{equation*}
+	
+	Moreover, $\ln a^b = b \ln a$, thus
+	\begin{equation}
+	t^{N-1} = e^{\ln t^{N-1}} = e^{(N-1)\ln t}
+	\end{equation}
+	
+	By using (2) in equation (1) we get
+	\begin{equation*}
+	I_N(t) = \dfrac{\lambda^N}{(N-1)!} e^{(N-1)\ln t} e^{-\lambda t}
+	\end{equation*}
+	
+	Based on the definition of the Taylor series, we see that the Taylor expansion of exponential around $N$ is 
+	\begin{equation*}
+	e^{(N-1)\ln t} = e^{(N-1)\ln N} + \frac{1}{1!} \left(\frac{N-1}{t}\right)^1 e^{(N-1)\ln N} + \frac{1}{2!} \left(\frac{N-1}{t}\right)^2 e^{(N-1)\ln N} + ... \Leftrightarrow
+	\end{equation*}
+	\begin{equation*}
+	I_N(t) =  \dfrac{\lambda^N}{(N-1)!} e^{-\lambda t} \sum_{k=0}^{\infty} \frac{1}{k!} \left(\frac{N-1}{t}\right)^k e^{(N-1)\ln N}  \Leftrightarrow
+	\end{equation*}
+	\begin{equation}
+	I_N(t) =  \dfrac{\lambda^N}{(N-1)!} e^{-\lambda t} e^{(N-1)\ln N} \sum_{k=0}^{\infty} \frac{1}{k!} \left(\frac{N-1}{t}\right)^k
+	\end{equation}
+	
+	We can now use the Stirling's approximate factorial $k! = k^k e^{-k} \sqrt{2\pi k}$ and get
+	\begin{equation}
+	\sum_{k=0}^{\infty} \frac{1}{k!} \left(\frac{N-1}{t}\right)^k = \sum_{k=0}^{\infty} \frac{(N-1)^k}{k^k e^{-k} \sqrt{2\pi k}t^k} = \frac{1}{\sqrt{2\pi}} \sum_{k=0}^{\infty} \frac{(N-1)^k e^k}{k^k t^k \sqrt{k}}
+	\end{equation}
+	
+	From (3) and (4) we find
+	\begin{equation}
+	I_N(t) =  \dfrac{\lambda^N}{(N-1)!} e^{-\lambda t} e^{(N-1)\ln N} \frac{1}{\sqrt{2\pi}} \sum_{k=0}^{\infty} \frac{(N-1)^k e^k}{k^k t^k \sqrt{k}}
+	\end{equation}
+	
+	Now, we should somehow convert this to a form in accordance to the Gaussian function
+	\begin{equation*}
+	f(x) = a \cdot e^{\frac{(x-b)^2}{2c^2}}
+	\end{equation*}
+	or
+	\begin{equation*}
+	f(x) = a \cdot e^{\left(\frac{x-b}{\sqrt{2}c}\right)^2}
+	\end{equation*}
+	
+	We can see that we've created many constants in (5) that can be regarded simply as $a$. For example, we could set $a$ as
+	\begin{equation*}
+	a =  \dfrac{\lambda^N}{(N-1)!} e^{(N-1)\ln N} \frac{1}{\sqrt{2\pi}}
+	\end{equation*}
+	or whatever is most convenient for the future transformations.
+	However, I'm not able to continue farther from here.
+	
+	
+	\section*{Handouts: Chapter 2, Exercise 2}
+	\setcounter{equation}{0}
+	
+	By definition, the Laplace transformation of $\Laplace \{f(t)\} $ is $\int_{0}^{\infty} e^{-st} f(t) dt$. Similarly,
+	\begin{equation*} \Laplace \{ \frac{1}{\sqrt{\pi t}}\} =  \int_{0}^{\infty} e^{-st} \frac{1}{\sqrt{\pi t}} dt \end{equation*}
+	
+	$\frac{1}{\sqrt{\pi}}$ is a constant factor and we can, thus, move it outside of the integral:
+	\begin{equation} 
+	\Laplace \{ \frac{1}{\sqrt{\pi t}}\} = \frac{1}{\sqrt{\pi}} \int_{t=0}^{t=\infty} e^{-st} \frac{1}{\sqrt{t}} dt 
+	\end{equation}
+	
+	Now let us assume a new variable $u$, such that 
+	\begin{equation}u = st \end{equation}
+	
+	Consequently, $t = \frac{u}{s} \Leftrightarrow \sqrt{t} = \frac{\sqrt{u}}{\sqrt{s}}$ and 
+	\begin{equation}
+	\frac{1}{\sqrt{t}} = \frac{\sqrt{s}}{\sqrt{u}}
+	\end{equation}
+	
+	Moreover, by differentiating both sides of the equation (2) we find that $du = s$ $dt$ and, thus,
+	\begin{equation}
+	dt = \frac{1}{s}du
+	\end{equation}
+	
+	We can now use the equations (2), (3) and (4) on the equation (1), and we get
+	\begin{equation*} 
+	\Laplace \{ \frac{1}{\sqrt{\pi t}}\} = \frac{1}{\sqrt{\pi}} \int_{u=0}^{u=\infty} e^{-u} \frac{\sqrt{s}}{\sqrt{u}} \frac{1}{s}du 
+	\end{equation*}
+	
+	We know that $\frac{\sqrt{a}}{a} = a^{\frac{1}{2}} \times a^{-1}  = a^{\frac{1}{2}-1} = a^{-\frac{1}{2}} = \frac{1}{\sqrt{a}}$; hence,
+	\begin{equation} 
+	\Laplace \{ \frac{1}{\sqrt{\pi t}}\} = \frac{1}{\sqrt{\pi}} \int_{u=0}^{u=\infty} e^{-u} \frac{1}{\sqrt{us}}du 
+	\end{equation}
+	
+	Now let us assume a new variable $w$, such that 
+	\begin{equation}w = \sqrt{u} \end{equation}
+	
+	Consequently,
+	\begin{equation}u = w^2 \end{equation}
+	
+	By differentiating both sides of the equation (6), we get $dw = \dfrac{1}{2\sqrt{u}}du$. Consequently,
+	\begin{equation}du = 2\sqrt{u} \textnormal{ } dw \end{equation}
+	
+	We can now use the equations (7) and (8) on the equation (5), and we get
+	\begin{equation*} 
+	\Laplace \{ \frac{1}{\sqrt{\pi t}}\} = \frac{1}{\sqrt{\pi}} \int_{w=0}^{w=\infty} e^{-w^2} \frac{1}{\sqrt{us}} 2\sqrt{u} \textnormal{ } dw 
+	\end{equation*}
+	
+	By performing simplifications and moving $\frac{2}{\sqrt{s}}$ outside the integral (we are allowed to do so because it is an integral with regard to $w$ only), we get
+	\begin{equation} 
+	\Laplace \{ \frac{1}{\sqrt{\pi t}}\} = \frac{2}{\sqrt{\pi s}} \int_{w=0}^{w=\infty} e^{-w^2} \textnormal{ } dw 
+	\end{equation}
+	
+	It is known that 
+	\begin{equation} 
+	\int_{0}^{\infty}e^{-x^2}dx = \frac{1}{2} \int_{-\infty}^{\infty}e^{-x^2}dx \textnormal{ (Gaussian Integral)} = \frac{1}{2} \sqrt{\pi}
+	\end{equation}
+	
+	From (9) and (10) we get
+	\begin{equation*} 
+	\Laplace \{ \frac{1}{\sqrt{\pi t}}\} = \frac{2}{\sqrt{\pi s}} \frac{1}{2} \sqrt{\pi}
+	\end{equation*}
+	
+	With simplifications, we get
+	\begin{equation*} 
+	\Laplace \{ \frac{1}{\sqrt{\pi t}}\} = \frac{1}{\sqrt{s}}
+	\end{equation*}
+	
+	
+	
+	\section*{Handouts: Chapter 2, Exercise 3a}
+	
+	
+	
+	\section*{Exercise 5.3}
+	
+	\begin{verse}
+		\textsl{}
+	\end{verse}
+	
+	\begin{lstlisting}
+	
+	\end{lstlisting}
+	
+\end{document}
