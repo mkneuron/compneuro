@@ -85,7 +85,9 @@ Vtime(1)=Vrest; % init membrane potential at rest
 Itime=[zeros(1,(simLength-injLength)/2) ones(1,injLength) ...
     zeros(1,(simLength-injLength)/2)]; % 0 = no current, 1 = current
 
-Itime=Itime*I; % Apply current value
+%random_noise=(rand(1,500)+ones(1,500)*-0.5)*2;
+random_noise=zeros(1,500);
+Itime=(Itime+random_noise)*I ; % Apply current value
 
 %% apply eq 5.8 Tm*(dV/dt)= eL-V + Rm*I
 
@@ -103,8 +105,12 @@ for i=2:(simLength)
     end
 end
 
+%% implement eq 5.11 Risi=(Tm*ln((Rm*I+eL-Vreset)/(Rm*I+eL-Vth)))-1
+
+Risi=(Tm*log((Rm*I+eL-Vreset)/(Rm*I+eL-Vth)))^-1;
 %% output
 spikeRate = sum(Vtime>39)/injLength;
 figure;
 plot(Vtime)
-title(sprintf('Membrane V with I=%f: spike rate = %f', I, spikeRate));
+title(sprintf('Membrane V with I=%f: spikerate = %f, Risi=%f',...
+    I, spikeRate, Risi));
