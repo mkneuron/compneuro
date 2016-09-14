@@ -8,7 +8,7 @@ v_n+1 = v_n + h*f(v_n) | (h is the change in time)
 2 solutions follow
 ---------
 Niccolo's solution (don't just copy the code)
-
+---------
 %author=Niccolo Calcini
 
 function [firing_rate, firing_rate_isi] = exercise_5_3 (injected_current_intensity)
@@ -54,40 +54,38 @@ log_arg = (membrane_resistance*injected_current_intensity + v_rest - v_reset)/(m
 firing_rate_isi = 1/(membrane_time_constant*log(log_arg));
 
 end
------------
+---------
+Second solution by Filippos Panagiotou
+Equivalent in spike frequency
+---------
+function spikeRate = membSim(I)
 %author=filippos
-%not done yet
-%%
-% set params
+%% set params
 
 Vrest=-70; %mV
 Vreset=-80;
 Rm=10; % membrane_resistence in MOhm
 Tm= 10; % membrane time constant (Rm*Cm)
-Cm=Tm/Rm; % membrane capacitance
+Cm=Tm/Rm; % membrane capacitance, unused
 eL=Vrest; % only for reading ease, value remains constant
 Vth=-54; % spiking threshold
 Vreset=-80; % mV of post activation potential
 simLength=500; % simulation length
 injLength=300; % I injection length
-spikeLog=zeros(simLength);
-
-I=0.1;
 
 
-%% preproc env
+%% init timelines
 
-% membrane potential timeseries
-vTime=zeros(1,simLength); % init timeline
-vTime(1)=Vrest; % init membrane potential at rest
+Vtime=zeros(1,simLength); % init membrane potential timeline
+Vtime(1)=Vrest; % init membrane potential at rest
 
-% injection current timeseries
+% injection current timeseries, center
 % Cut the difference of simLength and injLength in two and put it around
-% injLength to center it
+% injLength to center it 
 Itime=[zeros(1,(simLength-injLength)/2) ones(1,injLength) ...
-    zeros(1,(simLength-injLength)/2)];
+    zeros(1,(simLength-injLength)/2)]; % 0 = no current, 1 = current
 
-Itime=Itime*I; % Apply current to sim timeseries
+Itime=Itime*I; % Apply current value
 
 %% apply eq 5.8 Tm*(dV/dt)= eL-V + Rm*I
 
@@ -97,13 +95,16 @@ dVdt=@(V,I)((eL-V + Rm*I)/Tm);
 
 %% run simulation
 
-for i=2:(simlength)
-    vTime(i)=vTime(i-1)+ dVdt(vTime(i-1),Itime(i-1));
-    if vTime(i)>=Vth
-        spikeLog(i)=1;
-        vTime(i)=Vreset;
+for i=2:(simLength)
+    Vtime(i)=Vtime(i-1)+ dVdt(Vtime(i-1),Itime(i-1));
+    if Vtime(i)>=Vth %spikes
+        Vtime(i)=Vreset;
+        Vtime(i-1)=40; %spike!
     end
 end
 
+%% output
+spikeRate = sum(Vtime>39)/injLength;
 figure;
-
+plot(Vtime)
+title(sprintf('Membrane V with I=%f: spike rate = %f', I, spikeRate));
