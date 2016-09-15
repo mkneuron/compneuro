@@ -123,6 +123,7 @@ title(sprintf('Membrane V with I=%f: spikerate = %f, Risi=%f',...
 v_rest = - 70;  % mV (resting potential of the membrane)
 v_reset = - 80; % mV (after the neuron fires, it resets to this value)
 v_th = - 54;    % mV (threshold)
+v_s = -40;      % mV (value of the spike)
 
 r_m = 10;       % MΩ (total membrane resistance)
 tau_m = 10;     % ms (membrane time constant)
@@ -150,12 +151,13 @@ for i_e =2:.3:5.3 % repeat the simulation for different currents
         
         % fire a spike if the threshold was reached in the previous dt
         if v(1,p) >= v_th
-            v(1,p) = v_reset;
+            v(1,p) = v_s;
             num_spikes = num_spikes + 1;
+            v(1,c) = v_reset;
+        else
+            % calculate the voltage at the next dt, based on the equation 5.8
+            v(1,c) = v(1,p) + (v_rest - v(1,p) + r_m * current(1,c)) / tau_m;
         end
-        
-        % calculate the voltage at the next dt, based on the equation 5.8
-        v(1,c) = v(1,p) + (v_rest - v(1,p) + r_m * current(1,c)) / tau_m;
     end
     
     % determine the firing rate of the model
@@ -170,3 +172,5 @@ for i_e =2:.3:5.3 % repeat the simulation for different currents
 end
 
 clear c; clear p;
+
+
