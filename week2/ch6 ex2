@@ -1,5 +1,5 @@
 previous solution available at http://imgur.com/a/oV3oE
-
+Explanation of steps:
 (1) and (2) are the partial derivatives of the error function E=ax^2+ay^2
 (3) is empty line
 (4) to (9) are also explained between eq 58-59 in handouts
@@ -10,5 +10,7 @@ previous solution available at http://imgur.com/a/oV3oE
   (8) collapse to previous gradient
   (9) self explanatory
 (10) learning must be positive because this is how we have a downward direction towards a minimum.
-->(11)divergence from picture: case 1: different signs -> gonna recover the proper result
-                               case 2: same signs -> gonna obtain rate = 0, trivial case
+---> (11)divergence from picture.
+------> to get rid of absolute values, there exist 2 cases: 
+          case 1: different signs -> gonna recover the proper result
+          case 2: same signs -> gonna obtain rate = 0, trivial case
