@@ -1,18 +1,6 @@
 function main()
 maxIter = 100;
-test = 0;
-if test
-    % 2 dimensional case for error debugging!
-    n = 2;
-    p = 100;
-    % for testing purposed set this to 1
-    linSep = 1;
-    
-    % show the 2 dimension case [testing]
-    [x,t]= genData(n, p , linSep);
-    [w,c] = pla(n,p,x,t, linSep, maxIter);
-    plotSep(w,x,t,n);
-end
+
 
 % show the fraction of completion as function of p
 n = 50;
@@ -73,7 +61,7 @@ while not(all(c))
 end
 % fprintf('Learning done \t Number of iterations %d \n', idx)
 % number of converged patterns
-c = 2^sum(c) /2^p;
+c = mean(c)
 
 end
 
@@ -126,24 +114,4 @@ else
     
 end
 end
-%
-% %% start of
-%     case 'mnist',
-%         load mnistAll.mat
-%         Xmnist=mnist.train_images;
-%         ymnist=mnist.train_labels;
-%
-%         X3=Xmnist(:,:,find(ymnist==3)); % images of 3's
-%         X7=Xmnist(:,:,find(ymnist==7)); % images of 7's
-%
-%         n=size(X3,1).^2;
-%         x3=-reshape(X3,n,size(X3,3));	% input data of 3's multiplied by class label -1
-%         x7=reshape(X7,n,size(X7,3));		% input data of 7's multiplied by class label
-%         x3(n+1,:)=-1;
-%         x7(n+1,:)=1;
-%         x=[x3,x7]';
-%         x=double(x);	% matlab does not like the mnist data format
-%         p=size(x,1);
-%
-% end;
-% end
+
