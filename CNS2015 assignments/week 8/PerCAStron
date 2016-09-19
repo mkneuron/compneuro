@@ -1,7 +1,6 @@
-%% AUTHOR : Casper van Elteren
 function main()
 maxIter = 100;
-test = 1;
+test = 0;
 if test
     % 2 dimensional case for error debugging!
     n = 2;
@@ -17,28 +16,89 @@ end
 
 % show the fraction of completion as function of p
 n = 50;
-p = [2:1:3*n];
-
-for pi = 1:numel(p)
-    linSep = 0;
-    [x,t] = genData(n,p(pi), linSep);
-    [~,c] = pla(n, p(pi), x, t, 1e-3, maxIter);
-%     dd(pi) = 0;
-%     for j = 0:n-1
-%         try
-%             dd(pi) = dd(pi) + nchoosek(p(pi)-1, j);
-%         catch
-%             continue
-%         end
-%     end
-%     
-    cc(pi) = c;
+p = [1:1:4*n];
+ntrials = 10;
+maxiter = 100;
+eta = .1;
+linSep = 0; % ensure the data is linearly separable?
+% repeat experiment for ntrials
+for triali = 1:ntrials
+    for pi = 1:numel(p)
+        [x,t] = genData(n,p(pi), linSep);
+        [~,c] = pla(n, p(pi), x, t, eta, maxIter);
+        cc(pi,triali) = c;
+    end
 end
+cc = mean(cc,2);
 figure(2);  clf()
-plot(p, cc,'-o')
-xlabel('Number of patterns'); ylabel('Fraction of convergence');
+plot(p./n, cc,'-o')
+xlabel('P/N'); ylabel('Fraction of convergence');
+ylim([0,1])
 
 
+end
+
+function [w,c] = pla(n, p, x, t, eta, maxiter)
+% assuming that bias term is added
+% init weights between -1, 1
+w = rand(n+1,1)*2 - 1;
+
+% convergence vector
+c = zeros(p,1);
+idx =1;
+% keep going until all paterns are converged
+while not(all(c))
+    % for all patterns
+    for j = 1:p
+        inp = x(:,j);
+        % compute the activation [binary neuron classication]
+        tmp = sign(w' * inp);
+        % if target is not achieved update weights
+        if not(tmp == t(j))
+            dw = eta * (t(j) - tmp) * inp;
+            w = w + dw;
+            c(j) = false;
+            % converged
+        elseif tmp == t(j)
+            c(j) = true;
+        end
+    end
+    
+    % if converging is not possible stop
+    if idx > maxiter
+        %         fprintf('Not converged in maxiter\n')
+        break
+    end
+    idx = idx +1;
+end
+% fprintf('Learning done \t Number of iterations %d \n', idx)
+% number of converged patterns
+c = 2^sum(c) /2^p;
+
+end
+
+function [x,t] = genData(n, p, sep)
+% generates random linearly separable data, or random data
+w = rand(n+1,1);
+% generate data
+for i = 1:p
+    % add 1 for bias term
+    tmp = [1; rand(n,1)*2-1];
+    x(:, i) = tmp;
+    % make sure they are linearly separable
+    if sep
+        t(i)  = sign(w' * tmp);
+        
+        % else just put random targets
+        % note this may not lead to convergence!
+    else
+        if rand()*2 -1 > 0
+            t(i) = 1;
+        else
+            t(i) = -1;
+        end
+    end
+end
 end
 
 function plotSep(w,x,t,n)
@@ -66,68 +126,6 @@ else
     
 end
 end
-
-function [w,c] = pla(n, p, x, t, eta, maxiter)
-% assuming that bias term is added
-% init weights between -1, 1
-w = rand(n+1,1)*2 - 1;
-
-% convergence vector
-c = zeros(p,1);
-idx =1;
-% keep going until all paterns are converged
-while not(all(c))
-    % for all patterns
-    for j = 1:p
-        inp = x(:,j);
-        % compute the activation [binary neuron classication]
-%         tmp = sign(w' * inp);
-        % if target is not achieved update weights
-%         if tmp ~= t(j)
-        tmp = w' * inp;
-        if tmp < 0
-            dw = eta * (t(j)- tmp) * inp;
-            w = w + dw;
-            % converged
-        else
-            c(j) = true;
-        end
-    end
-    
-    idx = idx +1;
-    % if converging is not possible stop
-    if idx > maxiter
-        break
-    end
-end
-% number of converged patterns
-c = mean(c);
-end
-
-function [x,t] = genData(n, p, sep)
-% generates random linearly separable data, or random data
-w = rand(n+1,1)*2 - 1;
-% generate data
-for i = 1:p
-    % add 1 for bias term
-    tmp = [1; rand(n,1)];
-    x(:, i) = tmp;
-    % make sure they are linearly separable
-    if sep
-        t(i)  = sign(w' * tmp);
-        
-        % else just put random targets
-        % note this may not lead to convergence!
-    else
-        if rand()*2 -1 > 0
-            t(i) = 1;
-        else
-            t(i) = -1;
-        end
-    end
-end
-end
-
 %
 % %% start of
 %     case 'mnist',
