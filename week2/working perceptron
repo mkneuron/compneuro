@@ -1,0 +1,27 @@
+function error = mypercept(p,h) 
+
+n=50;			% number of dimensions
+xi=randi(2,p,n+1)-1;		% inputs xi(:,1:n)=0,1 xi(:,n+1)=-1;
+xi(:,n+1)=-1;
+w=randn(1,n+1);			% weights w(1:n) threshold w(n+1)
+iter = 1; 
+maxiter=1000;
+
+% GOAL: w*x_mu > 0 for all x
+
+%learning rule is:
+% w_new= w + D(wj) with
+% D(w_j)= h*ϴ(-w*xi)*xi
+
+theta=@(x) x>0; % ϴ is 1 if input > 0, and 0 otherwise
+Dw_j=@(w,xi) h*theta(-w*xi')*xi; % implement D(w_j)= h*ϴ(-w*xi)*xi
+
+% perceptron loop
+while(and(w*xi' ~= 0 , iter <= maxiter));
+    % w_new= w + D(wj)
+    for i=1:length(w)
+       w(i) = w(i) + Dw_j(w(i),xi(i));
+    end
+    iter = iter + 1;
+end
+error = sum(w*xi');
