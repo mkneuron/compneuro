@@ -1,0 +1,16 @@
+p = 2:2:50;
+reps=10;
+error=zeros(reps,length(p));
+
+for i=1:reps
+    for j=1:length(p)
+        % total error = mypercept(dims, h) (found in the working perceptron file)
+        % to get average divide by 50 
+        error(i,j)=mypercept(p(j),0.01);
+    end
+end
+
+imagesc(error)
+title( 'Error as a function of patterns')
+xlabel('p=2:2:50')
+ylabel('trial')
