@@ -166,6 +166,7 @@ function [ converged,w ] = learn( x,w,p,eta,maxiter )
     % if no eta value was given, set default eta number
     if nargin < 4
         eta = 1;
+        maxiter = 1000;
     end
     
     % if no maxiter value was given, set default max iteration number
