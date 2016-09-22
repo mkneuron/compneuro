@@ -3,6 +3,7 @@ Please don't just copy; use it as a guide.
 If you think there is any problem, it would be nice to mention it (it is probable that I made some mistakes)
 
 
+%% This cell tests only 1 value of p (p=n). For exercise 2, go to line 51.
 clear all;
 
 DATA='random';
@@ -18,18 +19,22 @@ case 'random',
 	
 	x=xi.*(z*ones(1,n+1));
 case 'mnist',
-	 load mnistAll.mat
+	load mnistAll.mat
     Xmnist=mnist.train_images;
     ymnist=mnist.train_labels;
 
     X3=Xmnist(:,:,find(ymnist==3)); % images of 3's
     X7=Xmnist(:,:,find(ymnist==7)); % images of 7's
 	
-    n=size(X3,1).^2;
+    % turn x3,x7 into 2D arrays (now they are 3D)
+    %n=size(X3,1).^2;
+    n=size(X3,1)*size(X3,2);        % number of pixels in each image
 	x3=-reshape(X3,n,size(X3,3));	% input data of 3's multiplied by class label -1
-	x7=reshape(X7,n,size(X7,3));		% input data of 7's multiplied by class label 
+	x7=reshape(X7,n,size(X7,3));	% input data of 7's multiplied by class label 
+    % add one more, baseline, column
 	x3(n+1,:)=-1;
 	x7(n+1,:)=1;
+    % connect the two classes (x3 has negative values and x7 has positive ones)
 	x=[x3,x7]';
 	x=double(x);	% matlab does not like the mnist data format
 	p=size(x,1);
@@ -49,7 +54,13 @@ if ~converged
 end;
 
 %%
-% exercise 3:
+% exercise 2 AND exercise 3:
+% Write a computer program that implements the perceptron learning rule. 
+% Take as data p random input vectors of dimension n with binary components. 
+% Take as outputs random assignments +/- 1. Take n=50 and test empirically 
+% that when p < 2 n the rule converges almost always and for p > 2n the rule 
+% converges almost never. Here is the template of a Matlab program.
+%
 % Reconstruct the curve C(p,n) as a function of p for n=50 in the following way. 
 % For each p construct a number of learning problems randomly and compute the 
 % fraction of these problems for which the perceptron learning rule converges. 
@@ -58,40 +69,49 @@ end;
 n = 50;             % number of dimensions
 eta = 1;            % learning rate
 maxiter = 1000;     % maximum iterations
-num_problems = 25;  % number of problems that will be tested with each pattern
+num_runs = 25;  % number of problems that will be tested with each pattern
 p_test = 5:5:200;   % all the p values that are tested
 convergence_rates = zeros(1,length(p_test));
+sum_converged = zeros(1,length(p_test));
 
 for p = p_test % for all p values
-    sum_converged = 0;
-    for problem = 1:num_problems % perform num_problems random problems
+    for problem = 1:num_runs % perform num_problems random problems
         rng shuffle % creates a different seed each time
         
+        % initialise
         xi=randi(2,p,n+1)-1;    % inputs xi(:,1:n)=0,1 xi(:,n+1)=-1;
         xi(:,n+1)=-1;
         z=2*randi(2,p,1)-3;		% output z(:,1)=-1,1
+        x=xi.*(z*ones(1,n+1));  % x = xi*zeta
         
-        x=xi.*(z*ones(1,n+1));
-        w=randn(1,n+1);
+        [converged,w] = learn(x,n,p,eta,maxiter);
         
-        [converged,w] = learn(x,w,p,eta,maxiter);
-        sum_converged = sum_converged + converged; % (true=1, false=0)
+        sum_converged(p/5) = sum_converged(p/5) + converged; % (true=1, false=0) % Q1
+        convergence_rates(p/5) = convergence_rates(p/5) + performance(x,w,p); % Q2
     end
-    
-    convergence_rates(p/5) = sum_converged/num_problems;
 end
 
+sum_converged = sum_converged/num_runs; % Q1
+convergence_rates = convergence_rates/num_runs; % Q2
+    
+% plot for exercise 2
 figure;
-plot(p_test,convergence_rates);
-title('Convergence rate vs. p');
+plot(p_test,sum_converged);
+title(sprintf('Convergence rate vs. p (n=%d)',n));
 xlabel('p'); ylabel('Convergence rate');
 
+% plot for exercise 3
+figure;
+plot(p_test,convergence_rates);
+title(sprintf('Performance vs. p (n=%d)',n));
+xlabel('p'); ylabel('Ratio of patterns that converged');
 
-function [ converged,w ] = learn( x,w,p,eta,maxiter )
+
+function [ converged,w ] = learn( x,n,p,eta,maxiter )
 %LEARN This function applies the learning rule in a perceptron
     % Input: 
     % x (x = xi * zeta)
-    % w (weights)
+    % n (weights)
     % p (number of patterns)
     % eta (learning rate - default=1)
     % maxiter (maximum number of iterations - default=1000)
@@ -120,7 +140,10 @@ function [ converged,w ] = learn( x,w,p,eta,maxiter )
         maxiter = 1000;
     end
 
+    
     % start learning
+    w=randn(1,n+1);
+    
     for i = 1:maxiter
         converged = true; % it will remain true only if ALL patterns are ok
         for mu = 1:p      % check ALL patterns
@@ -137,56 +160,19 @@ function [ converged,w ] = learn( x,w,p,eta,maxiter )
 
 end
 
+function [ performance ] = performance( x,w,p )
+%PERFORMANCE Measures the performance of the perceptron
+%   x the data (xi*zeta)
+%   w the learned weights
+%   p the number of patterns
 
-% DIFFERENT FILE 
-
-function [ converged,w ] = learn( x,w,p,eta,maxiter )
-%LEARN This function applies the learning rule in a perceptron
-    % Input: 
-    % x (x = xi * zeta)
-    % w (weights)
-    % p (number of patterns)
-    % eta (learning rate - default=1)
-    % maxiter (maximum number of iterations - default=1000)
-    %
-    % Output:
-    % converged (true or false) Indicates if the perceptron learning rule converged.
-    % w (float) The learned weights
-    
-    % HOW THE ALGORITHM WORKS 
-    % we have inputs xi and outputs zeta. 
-    % We also know that w * x^mu = w * xi^mu * zeta^mu
-    % We need to train w so that sign(w * x^mu) = 1, for all x.
-    % To train w, we adjust all w such that sign(w * x^mu) ~= 1 as follows:
-    % wNew = wOld + Delta(w) = wOld + eta * x^mu 
-    % note: The full formula is wNew = wOld + eta * x^mu * theta(-w * x^mu),
-    % but theta is equal to 1 in the case that w * x^mu <= 0, because
-    % theta(positive number) = 1.
-    
-    % if no eta value was given, set default eta number
-    if nargin < 4
-        eta = 1;
+num_converged = 0; % number of converged patterns
+for mu = 1:p      % check ALL patterns
+    if sign(w * x(mu,:)') == 1
+        num_converged = num_converged + 1;
     end
-    
-    % if no maxiter value was given, set default max iteration number
-    if nargin < 5
-        maxiter = 1000;
-    end
-
-    % start learning
-    for i = 1:maxiter
-        converged = true; % it will remain true only if ALL patterns are ok
-        for mu = 1:p      % check ALL patterns
-            if sign(w * x(mu,:)') ~= 1
-                w = w + eta * x(mu,:);
-                converged = false;
-            end
-        end
-
-        if converged
-            break;
-        end
-    end
+end
+performance = num_converged/p; % the ratio of converged patterns (over total)
 
 end
 
