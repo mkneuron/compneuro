@@ -1,0 +1,314 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Sep 28 17:58:34 2016
+
+@author: casper
+"""
+from __future__ import division
+
+import numpy as np
+import scipy.integrate as integrate
+import sympy as sp
+
+from pylab import *
+
+def dx(x):
+    return [x[0] -x[1] + x[1]**3, \
+            x[1] - x[0] + x[0] **3]
+                    
+def ex1a():         
+    domain  = np.linspace(-2, 2, 150)
+    x1, x2 = np.meshgrid(domain, domain)
+
+    # jacobian
+    dx1 = -x2 + x2**3;
+    dx2 = -x1 + x1**3;
+    
+    # fixed points
+    fp = np.array([[1, 1], [-1, 1], [-1,-1], [-1, 0], [1, 0], [1,-1], [0, 1],\
+                    [0, -1], [0, 0]])
+                    
+    # nullcllines  [they are symmetrical!]
+    # plot x1 nc in blue, x2 in red
+    nc1 = np.ones(domain.shape);
+    nc0 = np.zeros(domain.shape);
+    
+    fig1 = figure(1);clf()
+
+    plot(domain, nc1,'r--', nc1, domain, 'g--', fp[:, 0].T, fp[:, 1].T,'r.', markersize = 20)
+    legend(['x2 nullcline ','x1 nullcline','Fixed points'])
+    plot(nc0, domain , 'g--', -nc1, domain, 'g--', \
+     domain, nc0,'r--', domain, -nc1, 'r--')
+    
+    streamplot(x1,x2, dx1, dx2, density = 3, color = 'b')
+    xlabel('x1'); ylabel('x2');
+    title('Phase plot 1b')
+
+    
+    xlim([-2,2]); ylim([-2,2])
+    grid()
+    
+    savefig('../Figures/1a')
+
+    
+def ex1b():
+    domain = linspace(-1,1, 200);
+    x1, x2 = np.meshgrid(domain, domain)
+    
+    # jacobian
+    dx1 = 2 * x1 * x2;
+    dx2 =  1/4. - x1**2  + x2**2;
+    
+     
+    # nullclines
+    nullClineX2 = sqrt(domain**2 + 1/4)
+    nullClineX1 = domain * 0;
+    
+    figure(3);clf()
+    plot(nullClineX2, domain,'b', domain, nullClineX1,'r')
+    legend(['x2 nullcline', 'x1 nullcline'])
+    plot(-nullClineX2, domain,'b', domain, nullClineX1,'r', nullClineX1, domain,'r')
+    streamplot(x1,x2, dx1, dx2, density = 1,color = 'g');
+    
+    grid(); xlabel('x1'); ylabel('x2'); 
+    xlim([-1,1]); ylim([-1,1]);
+    # quiver(x1,x2, dx2/dx1, dx2/dx1)
+    savefig('../Figures/1b')
+
+def ex1c():
+    a = 0;
+    lim = 2;
+    domain = linspace(-lim, lim);
+    x1, x2 = np.meshgrid(domain, domain);
+    dx1 = x2 + x1 * x2 + a * x1 * x2 **2;
+    dx2 = -x1 -x1**2 + x2**2;
+    
+    nullclinex2 = np.sqrt(domain + domain**2)
+    print nullclinex2.shape, domain.shape
+    figure(4);clf()
+    streamplot(x1, x2, dx1, dx2, density = 2)
+    plot(nullclinex2, domain)
+    
+    xlim([-lim, lim]); ylim([-lim, lim])
+    
+    
+def ex2():
+    lim = 4;
+    
+    # x domain
+    domain = linspace(-lim,lim, 200);
+    c = 1; w = 1;
+    # meshgrid
+    x1, x2 = np.meshgrid(domain, domain)
+    
+    # calc system
+    dx1 = x2;
+    dx2 =  -c * (x1**2 -1)*x2 - w**2 * x1;
+    
+    g = lambda y1 :  -w **2 * (y1) / (c * (y1**2 - 1));
+    x2nullcline = g(domain);
+    x2nullcline[abs(x2nullcline) > 5] = np.inf
+    
+    # change of the system
+    def stream(y,t,c,w):
+        dy = [[],[]]
+        dy[0] = y[1]
+        dy[1] = -c * (y[0] ** 2 - 1) * y[1] - w**2 * y[0];
+        return dy
+
+    # plot one trajectory close outside the limit, one inside [close to origin]
+    xstart1 = 3;
+    ystart1 = -3;
+    
+    xstart2 = .1;
+    ystart2 = .1;
+    # time steps of simulation
+    t =  linspace(0, 20)
+    streamlining1 = integrate.odeint(stream, [xstart1, ystart1], t, args = (c,w))
+    streamlining1 = np.asarray(streamlining1)
+    streamlining2 = integrate.odeint(stream, [xstart2, ystart2], t, args = (c,w))
+    streamlining2 = np.asarray(streamlining2)
+
+    
+    # phase plane
+    figure(4);clf()
+    
+    streamplot(x1, x2, dx1, dx2)
+    plot(domain, x2nullcline,'g-', domain, domain * 0, '-r')
+    plot(streamlining1[:, 0], streamlining1[:, 1],'k--*', markersize = 10)
+    plot(streamlining2[:, 0], streamlining2[:, 1],'c--*', markersize = 10)
+    
+    grid()
+    xlim([-lim,lim]); ylim([-lim,lim])    
+    legend(['x2 nullcline','x1 nullcline','stream 1', 'stream 2'],loc ='lower left')
+    xlabel('x1'); ylabel('x2')
+    title('Van der Pol oscillator \n C = %d, W = %d' %(c, w))
+    
+    savefig('../Figures/2a')
+    # change c, w parameter!
+    # from the plots i gather that c determines the amplitude, 
+    # and the duration towards stable limit cylce
+    # omega determines the frequency
+    paramVals = [0,.5,1]
+    stores = zeros((len(paramVals), len(paramVals), len(t), 2))
+    idxPlot = 1;
+    fig5 = figure(5); clf()
+    for i,ii in enumerate(paramVals):
+        for j, jj in enumerate(paramVals):
+            odeRes = integrate.odeint(stream, [xstart1, ystart1], t, args =(ii, jj))
+        
+            subplot(3,3,idxPlot)
+            plot(t, odeRes[:, 0])
+            plot(t, odeRes[:, 1])
+            #ylim([-5,5]); #xlim([0,10])
+            tight_layout()
+            title('C = %.1f, W = %.1f' %(ii,jj))
+            xlabel('Iteration number')
+            legend(['x1','x2'], loc = 'lower left', ncol = 2)
+            idxPlot += 1;
+    savefig('../Figures/2b')
+    
+    
+    
+def newton(f, df, maxiter, x0, c):
+    eps = np.finfo(float).eps;
+
+    for i in xrange(maxiter):
+        x1 = x0 - f(x0, c)/df(x0, c);
+        if np.abs(x1-x0) < eps:
+            return x1
+        x0 = x1;
+    return x1
+    
+        
+        
+def ex3():
+    lim = 2;
+    nPoints = 500;
+    cs = linspace(-lim,lim, nPoints);
+    nullidx = find(cs >= 0)
+    # f(r,c) = 0 --> r(c-r^2) = 0
+    # if c < 0 we have 2 complex 1 real (r=0) fixed points
+    # else we have 3 real fixed points (if c = 0, they are all at 0)
+    # plot them in the complex plane?
+    
+    # too lazy to calculate it by hand
+    r,c = sp.symbols('r c')
+    f = sp.sympify('r * (c-r**2)');
+    g = sp.sympify('r*(c + 2 * r** 2 - r**4)');
+    df = f.diff('r');
+    dg = g.diff('r');
+    
+    f = sp.lambdify([r,c], f, 'numpy')
+    g = sp.lambdify([r,c], g, 'numpy')
+    df = sp.lambdify([r,c], df, 'numpy')   
+    dg = sp.lambdify([r,c], dg, 'numpy')
+    
+    domain = linspace(-2,2)
+    maxiter = 100;
+    
+    # begin figure
+    figure(6); clf();
+    
+    expectRootF = 3;
+    expectRootG = 5;
+    # answer vectors
+    rootsF = [[] for x in xrange(expectRootF)]
+    rootsG = [[] for x in xrange(expectRootG)]
+ 
+    
+    cmap1 = [[cm.jet(0)], [cm.jet(65)], [cm.jet(255)]]
+    cmap2 =[[cm.jet(0)], [cm.jet(65)], [cm.jet(128)], [cm.jet(192)], [cm.jet(255)]]
+    clabel = [];
+    for ii, ci in enumerate(cs): 
+        # initialize guesses, convert to complex because roots can be complex!
+        ci = np.complex(ci);
+
+        # the equation is to the power 3 so we expect 3 roots
+        guessForF = [-np.sqrt(ci),\
+                    np.complex(0.),\
+                    np.sqrt(ci)]
+                    
+        # for g we expect 5 roots
+        guessForG = [-np.sqrt(1 - np.sqrt(ci + 1)),\
+                    -np.sqrt(1 - np.sqrt(ci + 1)), \
+                    np.complex(0.), \
+                    np.sqrt(1 + np.sqrt(ci + 1)), \
+                    np.sqrt(1 - np.sqrt(ci + 1))]
+          
+        for rootFidx, rootF in enumerate(guessForF):
+            tmp = newton(f, df, maxiter, rootF, ci)
+            rootsF[rootFidx].append(tmp);
+            
+        for rootGidx, rootG in enumerate(guessForG):
+            #rootsG[rootGidx, ii] = newton(g, dg, maxiter, rootG, ci)
+            rootsG[rootGidx].append(newton(g, dg, maxiter, rootG, ci));
+        # plot a selection of the graphs
+        if not(mod(ii,100)):
+            subplot(221)
+            plot(domain, f(domain, ci))
+            clabel.append('c=%.1f' %(ci.real))
+            
+            subplot(222)
+            plot(domain, g(domain, ci))
+        
+    subplot(221); 
+    grid(); xlim([-5,5]); ylim([-2,2]); xlabel('r'); ylabel('f(r)')
+    title('f(r) for different c'); 
+    legend(clabel, loc ='center right',  bbox_to_anchor = (-.1 , .5), ncol = 1 )
+    
+    subplot(222); 
+    grid(); xlim([-5,5]); ylim([-2,2]); xlabel('r'); ylabel('g(r)')
+    title('g(r) for different c'); 
+    legend(clabel, loc = 'center right',bbox_to_anchor = (1.27 , 0.5), ncol = 1 )
+    
+    
+    rootsF = np.array(rootsF);
+    rootsG = np.array(rootsG);
+    labels = []
+    
+    # plot roots for f
+    for rootIdx in xrange(expectRootF):
+        # root as function of c
+        subplot(223)
+        plot(cs, rootsF[rootIdx,:].real,'-',\
+            cs, rootsF[rootIdx, :].imag, '--', color = cmap1[rootIdx][0])
+            
+        labels.append('root %d real' %(rootIdx + 1))
+        labels.append('root %d imag' %(rootIdx + 1))
+        
+
+    
+    subplot(223)
+    grid(); xlabel('c'); ylabel('root value'); title('roots of f(r) as a function of c')
+    legend(labels, loc = 'center right', bbox_to_anchor = (-.1 , .5), ncol = 1 )
+    
+
+     
+    labels = []
+    # plot roots for G
+    for rootIdx in xrange(expectRootG):
+        # root as function of c
+        subplot(224)
+        plot(cs, rootsG[rootIdx, :].real,'-',
+            cs, rootsG[rootIdx, :].imag, '--.', color = cmap2[rootIdx][0])
+            
+        labels.append('root %d real' %(rootIdx + 1))
+        labels.append('root %d imag' %(rootIdx + 1))
+        
+    
+    subplot(224)    
+    grid(); xlabel('c'); ylabel('root value'); title('roots of g(r) as a function of c')
+    legend(labels, loc = 'center right', bbox_to_anchor = (1.25 , 0.5), ncol = 1 )
+    
+
+    
+    savefig('../Figures/3')
+    
+ex1a()   
+ex1b()
+ex1c()
+#==============================================================================
+# ex2()
+# ex3()
+#==============================================================================
