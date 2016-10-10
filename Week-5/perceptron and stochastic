@@ -1,0 +1,156 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Oct 07 11:17:14 2016
+
+@author: Casper van Elteren
+"""
+from __future__ import division
+from pylab import *
+import numpy as np
+from scipy.io import loadmat
+
+
+def perceptron(patterns, targets, weights, moment, eta, gamma, threshold,\
+            maxiter, activation_function = act_func):
+    # prevent aliasing
+    weights = weights.copy()
+    if moment:
+        momentum = zeros(weights.shape);
+        
+    # set initial parameters
+    errors = [1];
+    # keep track of iterations needed
+    idx = 0;
+    while abs(errors[-1]) > threshold:
+        # weighted sum of input
+        h = patterns.dot(weights);
+
+        # compute activation
+        tHat = activation_function(h);
+        # compute the error
+        error = targets - tHat;
+        # update rules according to eq 58 (p.76)
+        if moment:
+            delta_weights =  eta * patterns.T.dot(error)
+            weights += gamma * momentum  + delta_weights;
+            momentum = delta_weights;
+        else:
+            weights += eta * patterns.T.dot(error)
+        # calculate the squared error
+        errors.append(np.sum(error**2))
+        idx += 1;
+        # have a break point if not lin separable
+        if  idx >= maxiter:
+            break
+    return errors, idx 
+
+def stochastic_perceptron(patterns, targets, weights, eta, threshold,\
+            maxiter, activation_function = act_func):
+    n_patterns = patterns.shape[0]
+    index = range(n_patterns)
+
+    weights = weights.copy()
+    error = 1;
+    idx = 0
+    errors = []
+    while abs(error) > threshold:
+        np.random.shuffle(index);
+        shuffleData = patterns[index,:];
+        shuffleTargets = targets[index]
+        sumerrors = 0;
+        for trial in xrange(n_patterns):
+            # pick a random index
+            # get the sample
+            sample = shuffleData[trial,:];
+            # get the corresponding target
+            target = shuffleTargets[trial];
+            # compute the activation
+            activation = np.array(activation_function(sample.dot(weights)), ndmin = 2)
+            # compute the error
+            error = target - activation;
+            # update the weights
+            weights += eta * (error * sample).T 
+            sumerrors += error**2        
+        errors.append(sumerrors)
+        error = sumerrors      
+        idx += 1;        
+        if idx > maxiter:
+             break
+    return errors, idx
+            
+      
+        
+def genData(n_patterns, n_neurons, n_out):
+    # create random patterns
+    patterns = np.random.rand(n_patterns, n_neurons) * 2 - 1;
+    targets = np.random.rand(n_patterns, n_out)*2 - 1
+    weights = np.random.rand(n_neurons, n_out)* 2 - 1; 
+    return patterns, targets, weights
+    
+
+
+# note to self: if the eta is too low in combination with the maxiter, the algorithm will not converge. Conversely, if i set eta to be >= 1, the algorithm will blow up
+n_neurons = 50;
+n_out = 1;
+# use momentum
+moment = 0;
+maxiter = 100;
+# produces output
+act_func = lambda x: x
+eta = .01
+gamma = .1;
+threshold = 1e-2;
+# gen a pattern range
+patternRange = [x for x in xrange(1, n_neurons,2)];
+# error vector
+# number of algorithms used
+nAlg = 3;
+errors = np.zeros((nAlg,len(patternRange)));
+iterations = np.zeros((nAlg,len(patternRange)));
+for idx, patterni in enumerate(patternRange):
+    print 'Busy on pattern %d' %(patterni)
+    # generate random data
+    patterns, targets, weights = genData(patterni, n_neurons, n_out);
+    # no momentum
+    res =  perceptron(patterns, targets, weights, 0, eta, gamma, threshold, maxiter);
+    errors[0, idx]  = res[0][-1]; iterations[0, idx] = res[1];
+    # momentum
+    res =  perceptron(patterns, targets, weights, 1, eta, gamma, threshold, maxiter);
+    errors[1, idx] = res[0][-1]; iterations[1, idx] = res[1];
+    # stochastic performs slightly bettter than no momentum
+    res = stochastic_perceptron(patterns,targets, weights, eta, threshold, maxiter)
+    errors[2, idx] = res[0][-1]; iterations[2, idx] = res[1];
+    
+# plot the sum squared error as a function of the number of patterns
+figure(1); clf()
+# plot the sum of squared errors
+subplot(211)
+semilogy(patternRange, errors.T)
+plot(np.ones(patternRange[-1])* threshold,'--r')
+
+# formatting
+legend(['-Moment','+Moment','Stochastic','Threshold'], loc ='best', ncol = 2)
+ylabel('Sum squared error'); xlabel('Number of patterns');
+title('squared error as a function of patterns \n' + \
+ 'eta = %.1e, gamma = %.1e, n_neurons = %d, maxiter = %d' \
+ %(eta, gamma, n_neurons, maxiter))
+
+# plot the number of iterations needed
+subplot(212)
+plot(patternRange, iterations.T)
+
+# formatting
+legend(['-Moment','+Moment','Stochastic'], loc = 'best')
+xlabel('Number of patterns'); ylabel('Number of iterations')
+
+
+
+
+
+
+
+
+
+
+    
+    
