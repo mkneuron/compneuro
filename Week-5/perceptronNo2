@@ -1,0 +1,60 @@
+% my attempt (not very successful)
+
+clear all;
+
+eta=0.0001;             % learning rate
+maxiter=5000;           % maximum number of iterations
+p=1;                    % number of patterns
+n=50;                   % number of dimensions
+xi=randi(2,p,n+1)-1;    % inputs xi(:,1:n)=0,1 xi(:,n+1)=-1;
+xi(:,n+1)=-1;
+z=2*randi(2,p,1)-3;		% outputs z(:,1)=-1,1
+
+% exercise bullet 4
+apply_momentum = true;  % defines whether momentum will be implemented
+a = 0.5;                % momentum strength
+
+% start with random weights
+w=randn(1,n+1);			% weights w(1:n) threshold w(n+1)
+
+% start learning
+delta_w =0; % initialise in case of momentum choice
+for run = 1:maxiter
+    sum_m = 0;
+    for mu = 1:p      % iterate through patterns
+        sum_j = 0;
+        for j=1:n
+            sum_j=sum_j+w(j)*xi(mu,j);
+        end
+        %sum_m = (z(mu)-sum_j)*xi(mu,:);
+        sum_m = (z(mu)-sum_j)*sum(xi(mu,:));
+    end
+    E_to_w = - sum_m; % partial derivative of E with respect to w
+    
+    if apply_momentum
+        % if applied, then delta_w will not change as rapidly
+        delta_w = a*delta_w - eta * E_to_w;
+    else
+        delta_w = - eta * E_to_w;
+    end
+    
+    w = w + delta_w; % update the weight
+end
+clear run; clear sum_j; clear sum_m; clear j; clear delta_w; clear E_to_w;
+
+perceptron_output = zeros(p,1);
+categorised_percepton_output = ones(p,1);
+sq_er = zeros(p,1);
+for mu=1:p
+    % activation function h(x)=x
+    perceptron_output(mu) = sum(w.*xi(mu,:));
+    categorised_percepton_output(mu) = sign(sum(w.*xi(mu,:)));
+    
+    % squared error
+    sq_er(mu) = (z(mu)-perceptron_output(mu))^2;
+end
+clear mu;
+
+% evaluation
+disp(sprintf('The mean squared error of the perceptron is %.4f.',mean(sq_er)));
+disp(sprintf('The success rate of categorised output is %.2f%%.',mean(z == categorised_percepton_output)*100));
