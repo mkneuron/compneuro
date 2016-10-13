@@ -1,0 +1,63 @@
+function [percCorrect,conv]=PercyGD(maxiter,eta,nop,nod,momentum)% params
+
+%maxiter=1000;
+%eta=0.0001;
+% create data
+
+%number_of_patterns = 15;
+%number_of_dimensions = 7;
+
+% for ease of typing
+%nop=number_of_patterns;
+%nod=number_of_dimensions;
+
+binarySequence=@(n) round(rand(1,n)); % returns binary pattern of lenght n
+
+% init xi
+xi=nan(nod,nop);
+
+for i=1:nop
+    % fill xi with patterns
+    xi(:,i)=binarySequence(nod);
+end
+
+z=binarySequence(nop);
+
+w=rand(1,nod)-0.5;
+
+% for nop_i =1:nop % loop over patterns
+
+learning = 1;
+iter=0; 
+dw=rand(1);
+old_dw=0;
+a=0.1;
+
+% train w
+while( (sum(dw)>0) && (iter<maxiter ))
+    for nop_i = 1:nop %iterate over all patterns
+        iter=iter+1;
+        % update rule sum over 
+        dw=sum(xi(:,i))*sum(w*xi(:,i)-z);
+        if(momentum)
+            % this actually amounts for the full momentum because on every
+            % iteration it carries over some of the momentum of the
+            % previous dw.
+            dw=dw+a*old_dw; 
+        end           
+        w=w-eta*dw;
+        old_dw=dw;
+    end
+    if(sum(w*xi)<=0)
+        learning=0;
+    end
+end
+
+% output convergence
+conv = sum(w*xi);
+% classify wxi to 0 or 1
+classif=w*xi>0.5;
+comparison=z==classif;
+percCorrect=sum(comparison)/nop;
+
+%[percCorr,conv]=PercyGD(10000,0.0001,20,10,1)
