@@ -27,18 +27,22 @@ w=rand(1,nod)-0.5;
 
 % for nop_i =1:nop % loop over patterns
 
-learning = 1;
 iter=0; 
 dw=rand(1);
 old_dw=0;
 a=0.1;
 
 % train w
-while( (sum(dw)>0) && (iter<maxiter ))
-    for nop_i = 1:nop %iterate over all patterns
+while( (sum(dw)>0) && (iter<maxiter )) % runs until max iters unless it converges before that
+    
+    for nop_i = 1:nop % iterate over all patterns
+    
         iter=iter+1;
-        % update rule sum over 
-        dw=sum(xi(:,i))*sum(w*xi(:,i)-z);
+        
+        % update rule: sum [ ( wxi(i) - z(i) )^2 ] dw
+        % = sum( xi(i) ) * 
+        dw=sum(xi(:,nop_i))*sum(w*xi(:,nop_i)-z);
+        
         if(momentum)
             % this actually amounts for the full momentum because on every
             % iteration it carries over some of the momentum of the
@@ -48,9 +52,7 @@ while( (sum(dw)>0) && (iter<maxiter ))
         w=w-eta*dw;
         old_dw=dw;
     end
-    if(sum(w*xi)<=0)
-        learning=0;
-    end
+
 end
 
 % output convergence
