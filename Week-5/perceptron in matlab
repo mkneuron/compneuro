@@ -1,19 +1,16 @@
-function [percCorrect,conv]=PercyGD(maxiter,eta,nop,nod,momentum)
+function [percCorrect,conv]=PercyGD(maxiter,eta,nop,nod,momentum,stochastic)
+
+% maxiter     : Maximum number of iterations if GD doesn't converge.
+% eta         : Learning step size. 
+% nop         : Number of patterns / pieces of data
+% nod         : Number of dimensions / neurons
+% momentum    : 1 to apply momentum, 0 to use normal GD learning. 
+% stochastic  : 1 to use stochastic GD, 0 to use batch GD.
 
 % example call:
-%[percCorr,conv]=PercyGD(1000,0.0001,20,10,1) % [maxiter,eta,p,d,momentum]
-
-
-%maxiter=1000;
-%eta=0.0001;
-% create data
-
-%number_of_patterns = 15;
-%number_of_dimensions = 7;
-
-% for ease of typing
-%nop=number_of_patterns;
-%nod=number_of_dimensions;
+%[percCorr,conv]=PercyGD(1000,0.0001,20,10,1,0) 
+%%
+% init
 
 binarySequence=@(n) round(rand(1,n)); % returns binary pattern of lenght n
 
@@ -25,56 +22,76 @@ for i=1:nop
     xi(:,i)=binarySequence(nod);
 end
 
-z=binarySequence(nop);
+z=binarySequence(nop); % init labels
 
 w=rand(1,nod)-0.5; % init weights around 0
 
+%% perceptron loop
+tempcount=0;
+% init params
+
 iter=0; 
-dw=rand(1,nod);
-old_dw=zeros(1,nod);
-a=0.1;
+dw=rand(1,nod); % init as random to pass through the while conditions
+old_dw=zeros(1,nod); % used if momentum = 1
+a=0.5; % momentum coefficient
 
-% train w
-while( (sum(dw)~=0) && (iter<maxiter)) % runs until max iters unless it converges before that
+% -- train w --
+
+while( (sum(dw)~=0) && (iter<maxiter)) % runs until max iters or until convergence
+    
     iter=iter+1;
-    for nop_i = 1:nop % iterate over all patterns
-
-        % x=xi*z'; %failed attempt
-        
-        % calculate gradient
-        % error func: sum [ ( wxi(i) - z(i) )^2 ] dw
-        % derivative with respect to w:
-        dw=(xi(:,nop_i).*(w*xi(:,nop_i)-z(nop_i)))'; % depreciated / resurrected
-        
-        % fail graveyard
-        
-        % x=xi*z'; % failed attempt
-        % dw = x*(w*x-z); % more fail
-
-        %more fail
-        %for nod_i=1:nod % for each weight
-        %    dw(nod_i)=x(:,nop_i)'*(w(nod_i)*x(:,nop_i)-z(nop_i));
-        %end
+    if(stochastic)
+        for nop_i = 1:nop % loop over patterns
             
-        if(momentum)
-            % this actually amounts for the full momentum because on every
-            % iteration it carries over some of the momentum of all the
-            % previous dw.
-            dw=dw+a*old_dw; 
-        end  
+            % calculate gradient
+            % error func: sum [ ( wxi(i) - z(i) )^2 ] dw
+            % derivative with respect to w:
+            dw=(xi(:,nop_i).*(w*xi(:,nop_i)-z(nop_i)))';
+            % can be thought of as pattern * (classification - label)
+            
+            % ! update w for every pattern
+            if(momentum)
+                
+                % this actually amounts for the full momentum because on every
+                % iteration it carries over some of the momentum of all the
+                % previous dw.
+                dw=dw+a*old_dw; % old_dw = 0 on the first iteration
+                
+            end
+            
+            % update weights
+            w=w-eta*dw;  
+            old_dw=dw; % used to calculate momentum
+         end
+            
+    else    % run batch GD
         
-        w=w-eta*dw; %
+        for nop_i = 1:nop % iterate over all patterns
+        
+            % derivative with respect to w
+            dw=(xi(:,nop_i).*(w*xi(:,nop_i)-z(nop_i)))'; 
+               
+            if(momentum)
+            dw=dw+a*old_dw; 
+            end  
+        end
+        w=w-eta*dw; % weights get updated for all patterns cumilatively
         old_dw=dw;
     end
-
+    
 end
+
+% --
 
 % output convergence
 conv = sum(w*xi);
-% classify wxi to 0 or 1
-classif=w*xi>0.5;
-comparison=z==classif; % if z(i)=classif(i),comparison(i)=1, else 0.
-percCorrect=sum(comparison)/nop;
 
-% example call:
-%[percCorr,conv]=PercyGD(1000,0.0001,20,10,1) % [maxiter,eta,p,d,momentum]
+%% classification
+
+% classify wxi to 0 or 1. 
+classif=w*xi>0.5; % If (i) > 0.5 classif(i)=1. 
+
+% compare labels z with the perceptron classiffications classif
+comparison=z==classif; % if z(i)=classif(i),comparison(i)=1, else 0.
+% output performance
+percCorrect=sum(comparison)/nop;
