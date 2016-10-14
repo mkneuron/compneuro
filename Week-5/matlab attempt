@@ -1,4 +1,8 @@
-function [percCorrect,conv]=PercyGD(maxiter,eta,nop,nod,momentum)% params
+function [percCorrect,conv]=PercyGD(maxiter,eta,nop,nod,momentum)
+
+% example call:
+%[percCorr,conv]=PercyGD(1000,0.0001,20,10,1) % [maxiter,eta,p,d,momentum]
+
 
 %maxiter=1000;
 %eta=0.0001;
@@ -23,33 +27,43 @@ end
 
 z=binarySequence(nop);
 
-w=rand(1,nod)-0.5;
-
-% for nop_i =1:nop % loop over patterns
+w=rand(1,nod)-0.5; % init weights around 0
 
 iter=0; 
-dw=rand(1);
-old_dw=0;
+dw=rand(1,nod);
+old_dw=zeros(1,nod);
 a=0.1;
 
 % train w
-while( (sum(dw)>0) && (iter<maxiter )) % runs until max iters unless it converges before that
-    
+while( (sum(dw)~=0) && (iter<maxiter)) % runs until max iters unless it converges before that
+    iter=iter+1;
     for nop_i = 1:nop % iterate over all patterns
-    
-        iter=iter+1;
+
+        % x=xi*z'; %failed attempt
         
-        % update rule: sum [ ( wxi(i) - z(i) )^2 ] dw
-        % = sum( xi(i) ) * 
-        dw=sum(xi(:,nop_i))*sum(w*xi(:,nop_i)-z);
+        % calculate gradient
+        % error func: sum [ ( wxi(i) - z(i) )^2 ] dw
+        % derivative with respect to w:
+        dw=(xi(:,nop_i).*(w*xi(:,nop_i)-z(nop_i)))'; % depreciated / resurrected
         
+        % fail graveyard
+        
+        % x=xi*z'; % failed attempt
+        % dw = x*(w*x-z); % more fail
+
+        %more fail
+        %for nod_i=1:nod % for each weight
+        %    dw(nod_i)=x(:,nop_i)'*(w(nod_i)*x(:,nop_i)-z(nop_i));
+        %end
+            
         if(momentum)
             % this actually amounts for the full momentum because on every
-            % iteration it carries over some of the momentum of the
+            % iteration it carries over some of the momentum of all the
             % previous dw.
             dw=dw+a*old_dw; 
-        end           
-        w=w-eta*dw;
+        end  
+        
+        w=w-eta*dw; %
         old_dw=dw;
     end
 
@@ -59,7 +73,8 @@ end
 conv = sum(w*xi);
 % classify wxi to 0 or 1
 classif=w*xi>0.5;
-comparison=z==classif;
+comparison=z==classif; % if z(i)=classif(i),comparison(i)=1, else 0.
 percCorrect=sum(comparison)/nop;
 
-%[percCorr,conv]=PercyGD(10000,0.0001,20,10,1)
+% example call:
+%[percCorr,conv]=PercyGD(1000,0.0001,20,10,1) % [maxiter,eta,p,d,momentum]
