@@ -1,0 +1,63 @@
+function [dw,dth] = boltzmann()
+%initialize
+n = 10; %number of neurons
+s = 2*randi(2,n,1)-3; %random spin -1 or 1
+p = 20; %number of patterns
+x = 2*randi(2,n,p)-3; %random patterns, size n*p
+w = randn(n,n); %random weights, size n*n
+th = rand(n,1); %thresholds of zero
+eta = 0.0000001; % learning rate
+
+ce_si = nan(n,1); %clamped expectation value of si
+ce_si_sj = nan(p,n,n); %clamped expectation value of sisj
+
+ce_si = 1/p * sum(x,2); % equation 39
+
+% equation 40
+for i=1:p
+    % for every pattern, the correlation matrix
+    % is (pattern)*(pattern)'. Equation 40 sums
+    % over all patterns
+    ce_si_sj(i,:,:) = x(:,i)*x(:,i)'; 
+end
+
+% take the sum
+ce_si_sj = 1/p * squeeze(sum(ce_si_sj,1));
+
+% Gibbs sampling, equation 11
+sigmoid = @(t) 1/(1+exp(-t));
+h = @(s,w,th,i) sum(w*s) + th(i); 
+eq11 = @(s,w,th,i) sigmoid(-s(i)*h(s,w,th,i));
+
+% free expectation values
+eq25 = @(s,w,th) 1/2 * sum(sum(w*s*s')) + sum(th'*s); %E
+eq26 = @(s,w,th) exp(-eq25(s,w,th)); %Z
+eq24 = @(s,w,th) 1/eq26(s,w,th) * exp(1/2 * sum(sum(w*s*s')) + sum(th'*s)); %p(s)
+eq37 = @(s,w,th) sum(ce_si*eq24(s,w,th)); % sum si*p(s)
+eq38 = @(s,w,th) sum(ce_si_sj*eq24(s,w,th)); % sum si*sj*p(s)
+
+eq36th= @(s,w,th) ce_si-eq37(s,w,th);
+eq36w= @(s,w,th) (ce_si_sj-eq38(s,w,th)*eq38(s,w,th)');
+
+% multiply w with a matrix with ones everywhere and zeros on the diagonal
+pW= w .* (ones(size(w)) - eye(size(w)));
+
+% store dw and dth
+dw=nan(n,n,200);
+dth=nan(n,200);
+for step=1:200
+    for sample=1:500
+        %choose random neuron
+        i = randi(10);
+        %flip spin with chance of eq11
+        if eq11(s,pW,th,i) > rand()*0.0001
+            s(i) = -s(i);
+        end
+    end
+    dw(:,:,step) = eq36w(s,pW,th);
+    dth(:,step) = eq36th(s,pW,th);
+    pW = pW+eta*dw(:,:,step);
+    pW= pW .* (ones(size(w)) - eye(size(w)));
+    th = th+eta*dth(step);
+end
+end
