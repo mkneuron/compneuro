@@ -1,12 +1,13 @@
 function [dw,dth] = boltzmann()
 %initialize
-n = 10; %number of neurons
+n = 20; %number of neurons
+nsteps=100; % number of steps
 s = 2*randi(2,n,1)-3; %random spin -1 or 1
-p = 20; %number of patterns
+p = 10; %number of patterns
 x = 2*randi(2,n,p)-3; %random patterns, size n*p
 w = randn(n,n); %random weights, size n*n
 th = rand(n,1); %thresholds of zero
-eta = 0.0000001; % learning rate
+eta = 0.01; % learning rate
 
 ce_si = nan(n,1); %clamped expectation value of si
 ce_si_sj = nan(p,n,n); %clamped expectation value of sisj
@@ -43,9 +44,9 @@ eq36w= @(s,w,th) (ce_si_sj-eq38(s,w,th)*eq38(s,w,th)');
 pW= w .* (ones(size(w)) - eye(size(w)));
 
 % store dw and dth
-dw=nan(n,n,200);
-dth=nan(n,200);
-for step=1:200
+dw=nan(n,n,nsteps);
+dth=nan(n,nsteps);
+for step=1:nsteps
     for sample=1:500
         %choose random neuron
         i = randi(10);
@@ -54,10 +55,10 @@ for step=1:200
             s(i) = -s(i);
         end
     end
-    dw(:,:,step) = eq36w(s,pW,th);
+    dw(:,:,step) = eq36w(s,pW,th) .* (ones(size(w)) - eye(size(w)));
     dth(:,step) = eq36th(s,pW,th);
     pW = pW+eta*dw(:,:,step);
-    pW= pW .* (ones(size(w)) - eye(size(w)));
+    %pW= pW .* (ones(size(w)) - eye(size(w)));
     th = th+eta*dth(step);
 end
 end
