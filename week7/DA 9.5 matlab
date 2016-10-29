@@ -1,0 +1,40 @@
+% init vars
+
+stochastic = 1; % on/off, random interval between u and r
+T=301;
+dt=5; % haven't used it
+epsilon=0.4; 
+Trials=100; 
+
+r = zeros(1,T); 
+u = zeros(1,T); u(100)=1; % stimulus onset at t=100
+v = zeros(1,T);
+w = zeros(1,T);
+delta = zeros(Trials,T);
+% t_steps = zeros(1,T/dt+1); % not used
+
+
+for trial=1:Trials
+    % time between u and r
+    if stochastic
+        onset = 150 + randi(101)-1 % returns an integer between 0 and 100;
+    else
+        onset = 200;
+    end
+    r(1,onset:onset+10)=1/50; % set reward for 10 stems after onset
+    
+    % trial loop
+    % init outside of loop to facilitate temporal difference
+    v(1)= r(t)+v(t);
+    for t=2:T
+        % disp(['t = ' num2str(t)])
+        v(t)=w(t)*u(T-t+1);
+        delta(trial,t)=r(t)+ v(t)-v(t-1); % temporal difference
+        w(t)=w(t)+epsilon*delta(trial,t)*u(T-t+1);
+    end
+end
+
+mesh(1:Trials,2:T,delta(:,1:300)')
+xlabel('Trials')
+ylabel('T')
+zlabel('delta')
