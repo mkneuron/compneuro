@@ -1,18 +1,16 @@
 % init vars
 
 stochastic = 1; % on/off, random interval between u and r
-T=301;
-dt=5; % haven't used it
+T=300;
+dt=5; 
 epsilon=0.4; 
 Trials=100; 
 
-r = zeros(1,T); 
-u = zeros(1,T); u(100)=1; % stimulus onset at t=100
-v = zeros(1,T);
-w = zeros(1,T);
-delta = zeros(Trials,T);
-% t_steps = zeros(1,T/dt+1); % not used
-
+r = zeros(1,T/dt); % T/dt = total number of steps
+u = zeros(1,T/dt); u(100/dt)=1; % stimulus onset at t=100
+v = zeros(1,T/dt);
+w = zeros(1,T/dt);
+delta = zeros(Trials,T/dt);
 
 for trial=1:Trials
     % time between u and r
