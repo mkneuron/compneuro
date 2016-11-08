@@ -16,15 +16,16 @@ w = zeros(1,T_dt);
 delta = zeros(Trials,T_dt);
 
 figure(1);
-subplot(5,2,1);plot(r);
-subplot(5,2,2);plot(r);
-subplot(5,2,3);plot(v);
-subplot(5,2,4);plot(w);
-subplot(5,2,5);plot(delta(1,:));
+
+subplot(5,2,1);plot(u);title('u');ylim([0,1])
+subplot(5,2,5);plot(v);title('v');
+subplot(5,2,7);plot(w);title('w');
+subplot(5,2,9);plot(delta(1,:));title('delta');
 % test stuff
 
 trial=1;
 t=1;
+
 
 %%
 for trial=1:Trials
@@ -35,6 +36,7 @@ for trial=1:Trials
         onset = 200/dt;
     end
     r(1,onset:(onset+10))=1/50; % set reward for 10 stems after onset
+    subplot(5,2,3);plot(r);title('r');ylim([0,2])
     
     % trial loop
     % init outside of loop to facilitate temporal difference
@@ -47,14 +49,12 @@ for trial=1:Trials
     end
 end
 
+subplot(5,2,4);plot(r);title('r');ylim([0,2])
+subplot(5,2,2);plot(u);title('u')
+subplot(5,2,6);plot(v);title('v')
+subplot(5,2,8);plot(w);title('w')
+subplot(5,2,10);plot(delta(end,:));title('delta')
 
-
-
-subplot(5,2,1)=plot(r);
-subplot(5,2,2)=plot(u);
-subplot(5,2,3)=plot(v);
-subplot(5,2,4)=plot(w);
-subplot(5,2,5)=plot(delta(end,:));
 
 figure(2);
 surf(1:Trials,1:T_dt,delta(:,1:T_dt)')
