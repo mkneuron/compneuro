@@ -1,0 +1,18 @@
+function out=meuler(func,func_dx, var1, var2, I)
+% diffFunc must be a differentiable function
+% current implementation takes exactly 2 variables in diffFunc
+% Function returns the modified Euler for the first variable (var1)
+
+% modified euler approximation
+
+h=0.1; % step
+oldVal=func(var1,var2,I);
+
+
+for i_approx=1:50
+    tempVal= oldVal+h/2*(func_dx(oldVal,var2,I));
+    newVal= (tempVal+h/2*(func_dx(tempVal,var2,I)));
+    oldVal=newVal;
+end
+
+out=newVal;
