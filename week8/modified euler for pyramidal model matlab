@@ -5,11 +5,10 @@ function out=meuler(func,func_dx, var1, var2, I)
 
 % modified euler approximation
 
-h=0.1; % step
+h=0.001; % step
 oldVal=func(var1,var2,I);
 
-
-for i_approx=1:50
+for i_approx=1:1000
     tempVal= oldVal+h/2*(func_dx(oldVal,var2,I));
     newVal= (tempVal+h/2*(func_dx(tempVal,var2,I)));
     oldVal=newVal;
