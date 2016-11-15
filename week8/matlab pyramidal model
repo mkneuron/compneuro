@@ -1,0 +1,32 @@
+
+
+v=0;
+u=0;
+I=1;
+totalRuns= 2000; % number of timepoints in simulation
+
+% pyramidal cell equations
+v_dt = @ (v,u,I) (0.7*(v+60)*(v+40) -u + I)/100;
+v_dt2 = @ (v,u,I) (7*v)/500 + 7/10; % derivative of v_dt
+u_dt = @ (v,u,I) 0.03*( -2 * (v+60) - u);
+u_dt2 = @ (v,u,I) -3/50; % dt of u_dt
+
+vLog=nan(1,totalRuns); vLog(1)=v;
+uLog=nan(1,totalRuns); uLog(1)=u;
+
+
+for i_run=2:totalRuns
+    
+    vLog(i_run)=meuler(v_dt,v_dt2,vLog(i_run-1),uLog(i_run-1),I);
+    uLog(i_run)=meuler(u_dt,u_dt2,uLog(i_run-1),vLog(i_run-1),I);
+    
+    % reset conditions
+    if vLog(i_run)>35
+        fprintf('spike!')
+        vLog(i_run-1)=70; % cosmetic, so that it looks like a spike
+        vLog(i_run)=-50; % postexcitatory dip
+        uLog(i_run)=uLog(i_run)+100;
+    end
+end
+
+plot(vLog)
