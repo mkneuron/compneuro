@@ -1,0 +1,57 @@
+%%
+% init parameter value range
+v_range=linspace(-50,35); 
+u_range=linspace(-8,96);
+I_range=linspace(0,600);
+
+% init value matrices
+v_vs_u =nan(length(v_range),length(u_range));
+u_vs_v =nan(length(u_range),length(v_range));
+v_vs_I =nan(length(v_range),length(I_range));
+u_vs_I =nan(length(u_range),length(I_range));
+
+% fill the matrices with the euler values
+
+for v_i=1:length(v_range)
+    for u_i=1:length(u_range)
+       v_vs_u(v_i,u_i)= meuler(v_dt,v_dt2,v_range(v_i), ...
+           u_range(u_i),I);
+       u_vs_v(v_i,u_i)= meuler(u_dt,u_dt2,v_range(v_i), ...
+           u_range(u_i),I);       
+    end
+end
+
+for v_i=1:length(v_range)
+    for I_i=1:length(I_range)
+       v_vs_I(v_i,I_i)= meuler(v_dt,v_dt2,v_range(v_i), ...
+           u,I_range(I_i));
+    end
+end
+
+for u_i=1:length(u_range)
+    for I_i=1:length(I_range)
+       u_vs_I(u_i,I_i)= meuler(v_dt,v_dt2,v, ...
+           u_range(u_i),I_range(I_i));
+    end
+end
+
+figure(2);
+title('value of v as a function of v and u, with I=100')
+surf(v_range,u_range,v_vs_u)
+
+figure(3);
+title('value of v as a function of v and I, with u=0')
+surf(v_range,I_range,v_vs_I)
+
+figure(4)
+title('value of v as a funciton of u and I, with v=0')
+surf(u_range,I_range,u_vs_I)
+
+[v_coor,u_coor] = meshgrid(v_range,u_range);
+
+figure(5)
+quiver(v_coor,u_coor,v_vs_u,u_vs_v,'r'); figure(gcf)
+title('this doesn't look good')
+
+
+
