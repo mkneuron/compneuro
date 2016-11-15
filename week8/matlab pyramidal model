@@ -20,14 +20,17 @@ for i_run=2:totalRuns
     
     % reset conditions
     if vLog(i_run)>35
-        fprintf('spike!')
+        %fprintf('spike!')
         vLog(i_run-1)=70; % cosmetic, so that it looks like a spike
         vLog(i_run)=-50; % postexcitatory dip
         uLog(i_run)=uLog(i_run)+100;
     end
 end
 
-plot(vLog(100:120),'b')
+figure(1);
+title('segment showing spikes');
 hold on
+plot(vLog(100:120),'b')
 plot(uLog(100:120),'g')
+legend('v','u');
 hold off
