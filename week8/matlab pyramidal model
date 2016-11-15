@@ -1,6 +1,6 @@
 v=20;
 u=0;
-I=700;
+I=100;
 totalRuns= 200; % number of timepoints in simulation
 
 % pyramidal cell equations
@@ -20,8 +20,8 @@ for i_run=2:totalRuns
     
     % reset conditions
     if vLog(i_run)>35
-        %fprintf('spike!')
-        %vLog(i_run-1)=70; % cosmetic, so that it looks like a spike
+        fprintf('spike!')
+        vLog(i_run-1)=70; % cosmetic, so that it looks like a spike
         vLog(i_run)=-50; % postexcitatory dip
         uLog(i_run)=uLog(i_run)+100;
     end
