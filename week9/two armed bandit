@@ -1,0 +1,37 @@
+% params
+
+k=2;
+coins_per_bandit=1000;
+coins=k*coins_per_bandit;
+actions = 1:k;
+d=10; % controls the variance of the distribution of rewards for the bandits
+
+% bandit rewards with random distributions
+
+bandit_machine= cell(k,1);
+
+for i=1:k
+    % the bandit works if you insert 2 coins but only draws from the distribution once per call.
+    bandit_machine{i}= @(coins) coins*(d-rand()*(d+i)-d/2.5);
+end
+
+
+% check the reward distributions of 2 bandits
+distcheck=nan(k,coins_per_bandit);
+for m=1:coins_per_bandit
+    for k = 1:k
+        distcheck(k,m)=bandit_machine{k}(1);
+    end
+end
+
+% plot approximate expected rewards
+hold off;
+plot(cumsum(distcheck(1,:)))
+hold on;
+plot(cumsum(distcheck(2,:)))
+hold off;
+title('expected cumulative reward');
+ylabel('cumulative reward');
+xlabel('trial')
+legend('bandit 1','bandit 2')
+
