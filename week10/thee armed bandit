@@ -1,0 +1,97 @@
+function f=threeArmedBandit(learning_choice,beta_choice)
+
+% three armed bandit
+% Select learning_choice between choices 1-3.
+% Select beta_choice between choices 1-3.
+% threeArmedBandit(1,1) and threeArmedBandit(2,1) look pretty
+
+%% Params
+
+trials = 750;
+switchTrials= 0:trials/3:trials; % on these trials the rewards will be changed
+ap = [1/3,1/3,1/3]; % flat action prior probability
+rewards = [1/8,1/3,7/8]; % probability of reward
+
+e = [0.01,0.1,0.5]; % learning rate
+
+b = [1,10,100]; % 
+                % I expect beta to dictate the range of the sochasticity;
+                % large betas will lead to small stochasticity whereas
+                % small betas will lead to more pseudorandom behavior.
+                % Thus, beta should define the exploration/exploitation
+                % tradeof.
+
+e = e(learning_choice); % select learning based on function call
+b = b(beta_choice); % select learning based on function call
+
+
+%% Run trials
+
+% logging variables
+arms       = ones(1,trials);
+reward_log = ones(1,trials);
+deltas     = ones(1,trials);
+ap_log     = ones(3,trials);
+
+for ith_trial=1:trials
+    
+    % rearrange rewards once in a while
+    if any(ith_trial==switchTrials)
+        newOrder=randperm(3);
+        rewards=[rewards(newOrder(1)),rewards(newOrder(2)),rewards(newOrder(3))];
+    end
+
+    % select arm according to probability of action.
+    
+    random=rand(1);
+    if random<ap(1)
+        arm=1;
+    elseif random<(ap(1)+ap(2))
+        arm=2;
+    else
+        arm=3;
+    end
+    
+    % determine whether the agent is rewarded.
+    reward= rand<rewards(arm);
+    
+    % update value of action
+    
+    % delta = reward-expected reward, as per equation 9.14
+    % new action probability = action probability + delta*learning
+    delta = reward-ap(arm);
+    ap(arm) = ap(arm)+e*delta;
+    
+    % normalize probabilities
+    
+    % my implementation of the softmax simply does x=exp(x)/sum(exp(x));
+    % multiplying the input with beta will give bx=exp(bx)/sum(exp(bx));
+    
+    ap=softmax(b*ap); % beta must be a scalar
+    
+    % log events
+    arms(ith_trial)=arm;
+    reward_log(ith_trial)=reward;
+    deltas(ith_trial)=delta;
+    ap_log(:,ith_trial)=ap;
+    
+end
+
+%% plotting
+
+% smooth data with fourier transform
+for i=1:3
+    data = fft(ap_log(i,:));
+    data(trials/2+1-350:trials/2+350) = zeros(700,1);
+    ap_log(i,:) = real(ifft(data));
+end
+
+plot(ap_log')
+title('smoothed action probabilities of levers')
+legend('lever 1','lever 2','lever 3')
+xlabel('trial')
+ylabel('action probability')
+
+%%
+end
+
