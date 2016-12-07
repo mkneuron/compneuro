@@ -1,10 +1,10 @@
 %% set params
 
-trials=10;
+trials=100;
 e=0.5;
 b=1;
 
-u=['A','B','C'];
+u=['A','B','C']; 
 A=1;
 B=2;
 C=3;
@@ -21,6 +21,7 @@ rewards=[0,5;2,0];
 %loggers
 
 reward_log=nan(1,trials);
+states_log=nan(1,trials);
 for i=1:trials
     
     %###
@@ -61,14 +62,35 @@ for i=1:trials
     delta_A_R=reward+w(C)-w(A);
     % m(u)= m(u)+e(delta_aa-P(a|u))*delta
     % P(a|u)=softmax(m(state_,:));
-    m(A,:)=m(A,:)+e*([delta_A_L,delta_A_R]-softmax(m(A,:)))*delta_A;
-    m(B,:)=m(B,:)+e*(rewards(state-1,:)-softmax(m(state,:)))*delta_state;
+    m(A,:)=softmax(m(A,:)+e*([delta_A_L,delta_A_R]-softmax(m(A,:)))*delta_A);
+    m(state,:)=softmax(m(state,:)+e*(rewards(state-1,:)-softmax(m(state,:)))*delta_state);
     
     % loggers
+    states_log(i)=state;
     reward_log(i)=reward;
     
 end
 
+figure(1);
 plot(reward_log)
-tilte('sorry for this bad reward plot, I was out of time.')
+title('Rewards received by agent.')
+xlabel('trial')
+ylabel('reward')
+
+figure(2);
+hist(states_log)
+title('Behavior statistics');
+xlabel('B=2, C=3')
+ylabel('Times the agent visited the state')
+xlim([1.5 3.5]);
+
+disp(['Average reward was ' num2str(sum(reward_log)/trials)]);
+
+if sum(reward_log)/trials<2.1
+    disp('The agent was too greedy to explore effectively.');
+elseif any(3==states_log)
+    disp('The agent explored and found the big reward');
+else
+    disp('The agent was greedy, but at least it ended up on the big reward')
+end;
 
