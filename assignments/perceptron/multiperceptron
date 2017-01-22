@@ -1,9 +1,23 @@
+%function [TR_ERR,TST_ERR,TR_ERR_2, TST_ERR_2] = multilayered_percy(H,F)
+
+% multilayered_percy returns the training and test, normal and
+% quadratic, error of a multilayered perceptron classifying the 3's and the
+% 7's from Mnist. 
+
+% H = number of nodes in hidden layer
+% F = binary variable, toggle F=1 for figures or F=0 for blessed silence
+% e.g. :
+% multilayered_percy(5,0)
+% ans = [ 0.01, 0.02, etc]
+
 %% TODO:
 %{
 * Add momentum/conjugate GD ifneed speed
+* devise convergence criterion
 %}
 %%
 clear all
+F=1;
 rand('seed',0);
 load('mnistAll.mat')
 noise=0.2;
@@ -16,14 +30,14 @@ X3=X(:,:,find(y==3));
 X7=X(:,:,find(y==7));
 
 
-% figure(1)
+% figure(2)
 % for i=1:5,
 % 	subplot(2,3,i)
 % 	imagesc(X3(:,:,i))
 % end;
 % subplot(2,3,6)
 % imagesc(mean(X3,3))
-% 
+% %
 % figure(2)
 % for i=1:5,
 % 	subplot(2,3,i)
@@ -31,6 +45,9 @@ X7=X(:,:,find(y==7));
 % end;
 % subplot(2,3,6)
 % imagesc(mean(X7,3))
+% 
+% figure(7)
+% imagesc(mean(mean(Xt,3)))
 
 D=28*28;
 
@@ -42,92 +59,181 @@ Xt=[Xt;ones(1,N)];	% add row of ones to input data to learn thresholds
 D=D+1;
 % Xt has dimension D times N with D number of input dimension +1 and N number of training patterns
 
-% % randomize input
-% randomized=randperm(size(yt,2));
-% 
-% for i=1:size(randomized,2)
-%     xtemp(:,i)=Xt(:,randomized(i));
-%     ytemp(i)= yt(randomized(i));
-% end
-% 
-% % training variables
-% n0_train = round(length(yt)*0.9);
-% Xt=xtemp(:,1:n0_train);
-% yt=ytemp(1:n0_train);
-% 
-% % testing variables
-% Xtt=xtemp(:,n0_train+1:end);
-% ytt=ytemp(n0_train+1:end);
+% randomize input
+randomized=randperm(size(yt,2));
+
+for i=1:size(randomized,2)
+    xtemp(:,i)=Xt(:,randomized(i));
+    ytemp(i)= yt(randomized(i));
+end
+
+% training variables
+n0_train = round(length(yt)*0.9);
+Xt=xtemp(:,1:n0_train);
+yt=ytemp(1:n0_train);
 
 %%
 H=2^2;		% number of hidden units / nodes
-H2 = H;
 K=1;        % number of layers
 w1=randn(H,D);
-w2=randn(1,H2);
+w2=randn(1,H+1);
 
 eps1=1e-5;
-eta=0.001;
-imax=10^4;
+eta=0.0001;
+imax=1000;
 E_all=zeros(1,imax);
 dw=1;
 i=0;
+a=0.0%12; % momentum term
+momentum1 = 0;
+momentum2 = 0;
 
-% define a theta function for threshold
+dE_dwji = 0;
+dE_dwkj = 0;
 
+% define a theta function for theshold
 
 theta = @(x) 1-(x<0); % returns 1 iff x>=0, else returns 0
 linear_activation = @(x) x; % returns x = x, here only for code readability
-f_y = @ (X,w) theta(-w .* X);
+f_y = @ (X,w) theta(-w * X);
 
-X = (Xt*yt')';
+% define activation functions and derivatives
+
+% h1 = @(x) logistic(x);
+% h2 = @(x) logistic(x);
+% h1_dx = @(x) logistic(x).*(1-logistic(x));
+% h2_dx = @(x) logistic(x).*(1-logistic(x));
+
+% % h1 = @(x) x;
+% h2 = @(x) x;
+% % h1_dx = @(x) x;
+% h2_dx = @(x) x;
+
+h1 = @(x) tanh(x);
+h2 = @(x) tanh(x);
+h1_dx = @(x) (1-tanh(tanh(x)));
+h2_dx = @(x) (1-tanh(tanh(x)));
+
+
+% Xt = Xt*2/785;
+
 while (dw>eps1)&&(i<imax),
     
     i=i+1; %iteration counter
     
-    if any(i==[0:20:imax])
-        sprintf(['iteration ' num2str(i) '/' num2str(imax)])
-    end
-    
-    
-    for n=1:H %iterate over hidden nodes of layer 1
-        % perceptron learning rule
-        hidden_output = f_y(Xt,w1(n,:));
+    if F && any(i==[0:25:imax])
+        sprintf(['iteration ' num2str(i) '/' num2str(imax) ', dw = ' num2str(dw_all(i-1))])
+        
+        figure(1)
+        subplot(2,2,4)
+        
+        subplot(2,2,1)
+        w=w1(1,1:end-1);
+        imagesc(reshape(w,28,28));
+        title(sprintf(['weight for this node: ' num2str(w2(1))]))
+        
+        subplot(2,2,2)
+        w=w1(2,1:end-1);
+        imagesc(reshape(w,28,28));
+        title(sprintf(['weight for this node: ' num2str(w2(2))]))
 
-        delta_w1_li(n,:) = eta * hidden_output;
-        w1(n,:) = w1(n,:) + delta_w1_li(n,:);
-        
-        %dw1(l,:) = theta(w1(l,:)*Xt) == 2yt; % compare node answer to final answer
-        dw1(n,:) = delta_w1_li(n,:);
+        subplot(2,2,3)
+        w=w1(3,1:end-1);
+        imagesc(reshape(w,28,28));
+        title(sprintf(['weight for this node: ' num2str(w2(3))]))
+
+        subplot(2,2,4)
+        w=w1(4,1:end-1);
+        imagesc(reshape(w,28,28));
+        title(sprintf(['weight for this node: ' num2str(w2(4))]))
+
+        drawnow;
     end
     
-    for n=1:H2
-        
-        visible_output= w2(n)*
+    % compute forward propagation
     
-    % 	% back propagation computation
-    % 	dw1=zeros(H,D);
-    dw2=zeros(1,H);
+    h1_aj = nan(H,size(yt,2)); % h1_aj changes size during backprop so we reset it
+    for n_j=1:H % iterate over hidden nodes
+        % perform inner product and apply activation function
+        aj(n_j,:) = w1(n_j,:) * Xt; % bias implicit bc added to the input
+        h1_aj(n_j,:) = h1(aj(n_j,:));
+    end
+    
+    % h1_aj =z(aj)
+    
+    % second layer
+    
+    % perform inner product and apply activation function
+    ak = w2(1:end-1)*h1_aj;
+    yk = h2(ak);
+    
+    %% 
+    % compute backwards propagation
+    
+    h1_aj = [h1_aj; ones([1,size(h1_aj,2)])];
+    
+    % compute deltas
+    
+    % dk_n = (yk_n-tk_n)*h2'(ak_n)
+    % in vector form :
+    dk = (yk - yt) .* h2_dx(ak);
+    
+    % dj = 
+    for n_j = 1:H % iterate over nodes j
+        dj(n_j,:) = h1_dx(aj(n_j,:)).*dk*w2(H);
+    end
+    
+    % compute errors
+    dE_dwkj = dk*h1_aj'; % equivalent to sum(dk(n)*h1(aj))
+    dE_dwji = dj*Xt';
+    
+    % adjust weights
+
+    w1 = w1 - eta*dE_dwji + momentum1;
+    w2 = w2 - eta*dE_dwkj + momentum2;
+    
+    % compute momentum
+    momentum1 = a* w1;
+    momentum2 = a* w2;
     
     % error computation
-    E=0;
+    % classify images
+   
+    ykr = round(yk);
+    prev = ykr ~= yt;
+
+    assert7 = yk>0;
+    is7     = yt>0;
+    assert3 = yk<0;
+    is3     = yt<0;
+    E = 0;
+    E = E + sum(assert7 ~= is7);
+
     
-    dw=max(max(max(abs(dw1))),max(abs(dw2)));	% maximum change in weights
+    dw=max(max(max(abs(eta*dE_dwji+momentum1))),max(abs(eta*dE_dwkj+momentum2)));	% maximum change in weights
     E_all(i)=E;
     dw_all(i)=dw;
     
 end;
 
+TR_ERR=E/length(yt);
+TR_ERR_2=E^2;
+
+%% plotting errors
+if F
+    fprintf('number of learning steps: %d \n',i);
+    figure(3)
+    loglog(E_all)
+    title('Error between predicted output and label')
+    figure(4)
+    loglog(dw_all)
+    title('change in weights')
+    fprintf('train error: %f \n',E/size(yt,2));
+    fprintf('dw: %f \n',dw);
+    
+end
 
 %%
-fprintf('number of learning steps: %d \n',i);
-figure(3)
-loglog(E_all)
-figure(4)
-loglog(dw_all)
-fprintf('train error: %f \n',E);
-fprintf('dw: %f \n',dw);
-
 % Testing
 X=mnist.test_images;
 y=mnist.test_labels;
@@ -146,13 +252,33 @@ D=D+1;
 
 % compute test error and number of correctly classified images
 
-% average classification
-misclass = zeros(size(yt));
-for n = 1:H
-    misclass= misclass + ((theta(w1(n,:)*Xt) ~= (yt+1)/2));
+% compute a single forward propagation with the old weights
+
+% first layer
+
+h1_aj = nan(H,size(yt,2)); % h1_aj changes size during backprop so we reset it
+aj = nan(size(h1_aj)); % aj has changed size too!
+for n_j=1:H % iterate over hidden nodes
+    % perform inner product and apply activation function
+    aj(n_j,:) = w1(n_j,:) * Xt; % bias implicit bc added to the input
+    h1_aj(n_j,:) = h1(aj(n_j,:));
 end
-misclass= misclass >= H/2;
-percentageCorrect=(size(yt,2)-sum(misclass))/size(yt,2);
-figure(3)
-plot(misclass)
-fprintf('test error: %f \n',1-percentageCorrect);
+
+% second layer
+
+% perform inner product and apply activation function
+ak = w2(1:end-1)*h1_aj;
+yk = h2(ak);
+    
+assert7 = yk>0;
+is7     = yt>0;
+assert3 = yk<0;
+is3     = yt<0;
+E = 0;
+E = E + sum(assert7 ~= is7);
+
+TST_ERR = E;
+
+if F
+fprintf('test error: %f \n',TST_ERR/2038);
+end
