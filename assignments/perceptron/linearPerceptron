@@ -1,1 +1,153 @@
+%% TODO:
+%{
+* Add momentum/conjugate GD ifneed speed
+%}
+%%
+clear all
+rand('seed',0);
+load('mnistAll.mat')
+noise=0.2;
+X=mnist.train_images;
+X=2*double(min(X,1))-1;
+%X=X.*(1-2*(rand(size(X))<noise));
+y=mnist.train_labels;
 
+X3=X(:,:,find(y==3));
+X7=X(:,:,find(y==7));
+
+
+% figure(1)
+% for i=1:5,
+% 	subplot(2,3,i)
+% 	imagesc(X3(:,:,i))
+% end;
+% subplot(2,3,6)
+% imagesc(mean(X3,3))
+% 
+% figure(2)
+% for i=1:5,
+% 	subplot(2,3,i)
+% 	imagesc(X7(:,:,i))
+% end;
+% subplot(2,3,6)
+% imagesc(mean(X7,3))
+
+D=28*28;
+
+% Training & testing
+Xt=[reshape(X3,D,size(X3,3)),reshape(X7,D,size(X7,3))];
+yt=[-ones(1,size(X3,3)),ones(1,size(X7,3))];
+N=length(yt);
+Xt=[Xt;ones(1,N)];	% add row of ones to input data to learn thresholds
+D=D+1;
+% Xt has dimension D times N with D number of input dimension +1 and N number of training patterns
+
+% % randomize input
+% randomized=randperm(size(yt,2));
+% 
+% for i=1:size(randomized,2)
+%     xtemp(:,i)=Xt(:,randomized(i));
+%     ytemp(i)= yt(randomized(i));
+% end
+% 
+% % training variables
+% n0_train = round(length(yt)*0.9);
+% Xt=xtemp(:,1:n0_train);
+% yt=ytemp(1:n0_train);
+% 
+% % testing variables
+% Xtt=xtemp(:,n0_train+1:end);
+% ytt=ytemp(n0_train+1:end);
+
+%%
+H=2^2;		% number of hidden units
+H2 = H;
+K=1;        % number of layers
+w1=randn(H,D);
+w2=randn(1,H+1);
+
+eps1=1e-5;
+eta=0.001;
+imax=10^4;
+E_all=zeros(1,imax);
+dw=1;
+i=0;
+
+% define a theta function for threshold
+
+
+theta = @(x) 1-(x<0); % returns 1 iff x>=0, else returns 0
+linear_activation = @(x) x; % returns x = x, here only for code readability
+f_y = @ (X,w) theta(-w .* X).*X;
+
+X = (Xt*yt')';
+while (dw>eps1)&&(i<imax),
+    
+    i=i+1; %iteration counter
+    
+    if any(i==[0:20:imax])
+        sprintf(['iteration ' num2str(i) '/' num2str(imax)])
+    end
+    
+    for n=1:H %iterate over hidden nodes of layer 1
+        % perceptron learning rule
+        hidden_output = f_y(X,w1(n,:));
+        
+        delta_w1_li(n,:) = eta * hidden_output;
+        w1(n,:) = w1(n,:) + delta_w1_li(n,:);
+        
+        %dw1(l,:) = theta(w1(l,:)*Xt) == 2yt; % compare node answer to final answer
+        dw1(n,:) = delta_w1_li(n,:);
+    end
+    
+    % 	% back propagation computation
+    % 	dw1=zeros(H,D);
+    dw2=zeros(1,H);
+    
+    % error computation
+    E=0;
+    
+    dw=max(max(max(abs(dw1))),max(abs(dw2)));	% maximum change in weights
+    E_all(i)=E;
+    dw_all(i)=dw;
+    
+end;
+
+
+%%
+fprintf('number of learning steps: %d \n',i);
+figure(3)
+loglog(E_all)
+figure(4)
+loglog(dw_all)
+fprintf('train error: %f \n',E);
+fprintf('dw: %f \n',dw);
+
+% Testing
+X=mnist.test_images;
+y=mnist.test_labels;
+X=2*double(min(X,1))-1;
+
+X3=X(:,:,find(y==3));
+X7=X(:,:,find(y==7));
+D=28*28;
+Xt=[reshape(X3,D,size(X3,3)),reshape(X7,D,size(X7,3))];
+yt=[-ones(1,size(X3,3)),ones(1,size(X7,3))];
+N=length(yt);
+Xt=[Xt;ones(1,N)];	% add row of ones to input data to learn thresholds
+D=D+1;
+% Xt has dimension D times N with D number of input dimension +1 and N number of test patterns
+
+
+% compute test error and number of correctly classified images
+
+% average classification
+misclass = zeros(size(yt));
+for n = 1:H
+    misclass= misclass + ((theta(w1(n,:)*Xt) ~= (yt+1)/2));
+end
+misclass= misclass >= H/2;
+percentageCorrect=(size(yt,2)-sum(misclass))/size(yt,2);
+figure(3)
+plot(misclass)
+fprintf('test error: %f \n',1-percentageCorrect);
