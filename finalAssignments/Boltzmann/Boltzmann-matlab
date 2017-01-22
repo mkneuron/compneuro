@@ -1,0 +1,126 @@
+clear all
+
+I = 0; % digit for which we learn the distribution
+
+rand('seed',0);
+load('mnistAll.mat');
+noise=0.2;
+X=mnist.train_images;
+X=2*double(min(X,1))-1;
+X=X.*(1-2*(rand(size(X))<noise));
+y=mnist.train_labels;
+
+XI=X(:,:,find(y==I));
+% vectorize patterns
+XI = reshape(XI,28*28,size(XI,3));
+
+
+D=28*28;
+
+%% Training
+
+% variable initialization
+% init W 
+% w must be symmetric, and have aces in diagonal
+
+% next time I will loop over the whole matrix and just write over old values
+for i=1:D % loop over rows
+    for j = 1:i % in every row loop over one more column
+        if i == j 
+            w(i,j)=1; % correlation with self
+        else
+            w(i,j)=rand();
+            w(j,i)=w(i,j); % mirror correlation to the corresponding coordinate
+        end
+    end
+end
+
+N = D; % decorative renaming
+Neurons = sign(rand(N,1)-0.5); % initialize neurons to 1 or -1
+theta=zeros(D,1);
+m = rand(N,1); % <mi> vector
+P = size(XI,3); % number of patterns
+
+
+% calculate clamped statistics E(si)_c, E(sisj)_c
+% E(si)_c = 1/p sum over patterns
+ev_si_c = (1/P)*sum(XI,2); % 
+% E(sisj)_c = correlation sum over patterns
+ev_sisj_c = (1/P)*XI*XI'; 
+
+si_sj=nan(N,N,P);
+% calculate correlations of neurons for each pattern
+for i = 1:P
+    si_sj(:,:,i) = XI(:,i)*XI(:,i)';
+end
+
+% loop vars
+eta = 0.01; % learning rate
+max_sample = 500;
+max_learn = 200;
+learn_iter = 1;
+%% learning loop
+while learn_iter<=max_learn && 1 % the 1 is placeholder for convergence condition
+    learn_iter = learn_iter +1;
+    
+    if any(learn_iter==[0:20:max_learn])
+        sprintf(['iteration ' num2str(learn_iter)];
+    end
+    
+    % compute state transitions
+    for sample = 1:max_sample
+        sample=s;
+        
+        Zij = exp(-1/2 * w.*sisj
+        p_s=1/Z
+    
+% energy is needed when assessing probability
+% energy(s) = 1/2 sum(ij, wij*sisj) + sum(i,th_i*si
+% energy = @(w,ss,th,si) 1/2 * sum(sum(w_ij .* ss)) + sum(th.*si);
+% while t rolling
+
+% compute C
+
+C = eye(N)/(1-m);
+
+% compute expected values (ev_bla_bla)
+
+% free expected E(si), E(sisj)
+ev_si = m;
+ev_sisj = C ;
+
+% find derivatives of weights and theta
+dL_dw_ij = ev_sisj_c -ev_sisj;
+dL_dth_ij = ev_si_c - ev_si ;
+
+% update weights and theta
+w_ij = w_ij + eta*dL_dw_ij;
+th_ij = th_ij + eta*dL_dth_ij;
+
+C_ij = si_sj_c - si_c*sj_c;
+
+end
+
+%% Testing
+X1=mnist.test_images;
+X1=2*double(min(X1,1))-1;
+%X1=X1.*(1-2*(rand(size(X1))<noise));	% corrupt test images with noise
+y1=mnist.test_labels;
+N1=size(X1,3);
+
+confusion=zeros(10,10);
+
+
+N1=500;
+for t=1:N1, % for all test patterns
+	x=X1(:,:,t);
+	x=reshape(x,D,1);
+	% compute the probability of pattern x in each of the 10 models -> p(1:10)
+	p=zeros(1,10);
+
+	[pmax,y]=max(p);
+	y=y;
+	confusion(y1(t)+1,y)=confusion(y1(t)+1,y)+1;
+end;
+error=N1-sum(diag(confusion));
+
