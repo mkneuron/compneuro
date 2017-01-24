@@ -12,7 +12,7 @@
 
 %% TODO:
 %{
-* Add momentum/conjugate GD ifneed speed
+* ifneed fix momentum
 * devise convergence criterion
 %}
 %%
@@ -79,12 +79,12 @@ w1=randn(H,D);
 w2=randn(1,H+1);
 
 eps1=1e-5;
-eta=0.0001;
+eta=0.0003;
 imax=1000;
 E_all=zeros(1,imax);
 dw=1;
 i=0;
-a=0.0%12; % momentum term
+a=0.0;%12; % momentum term
 momentum1 = 0;
 momentum2 = 0;
 
@@ -114,14 +114,19 @@ h2 = @(x) tanh(x);
 h1_dx = @(x) (1-tanh(tanh(x)));
 h2_dx = @(x) (1-tanh(tanh(x)));
 
+% relu
+h1 = @(x) max(0,x); % relu
+h1_dx = @(x) x>0; % derivative of relu
+
 
 % Xt = Xt*2/785;
 
+%%
 while (dw>eps1)&&(i<imax),
     
     i=i+1; %iteration counter
     
-    if F && any(i==[0:25:imax])
+    if F && any(i==[0:100:imax])
         sprintf(['iteration ' num2str(i) '/' num2str(imax) ', dw = ' num2str(dw_all(i-1))])
         
         figure(1)
@@ -150,6 +155,9 @@ while (dw>eps1)&&(i<imax),
         drawnow;
     end
     
+    if any(i==[0:250:imax])
+        eta=eta*0.3
+    end
     % compute forward propagation
     
     h1_aj = nan(H,size(yt,2)); % h1_aj changes size during backprop so we reset it
