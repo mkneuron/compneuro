@@ -1,0 +1,11 @@
+noise_increments = 20;
+
+confusion = nan(10,10,noise_increments);
+total_true = nan(10,noise_increments);
+precise = nan(10,noise_increments);
+
+
+for i = 1:noise_increments
+    [confusion(:,:,i),total_true(:,i),precise(:,i)] = boltztest(i/noise_increments);
+end
+
