@@ -36,7 +36,7 @@ for i=1:D % loop over rows
                 % j j        % i = 2
                 % j j j      % i = 3
         if i == j 
-            w(i,j)=1; % correlation with self
+            w(i,j)=0; % correlation with self
         else
             w(i,j)=rand()-0.5;
             w(j,i)=w(i,j); % mirror correlation to the corresponding coordinate
@@ -73,19 +73,22 @@ mi = e_si_c; % <si>c
 % when calculating C we divide mi by cheat twice, therefore...
 e_sisj_c = (1/P*(XI*XI'))/cheat^2;
 
-% mimj = mi*mj exept when i=j, then it's 0.
-mimj = mi*mi'.* (ones(size(mi,1))-eye(size(mi,1)));
+% mimj = mi*mj exept when i=j, then it's 1.
+mimj = (mi*mi');%.* (ones(size(mi,1))-eye(size(mi,1)));
 
 %% calculate mean field equations
-Chi  = e_sisj_c - mimj; % C = <sisj>_c - <si>_c*<sj>_c  
-Chi = Chi ; % except when i=j
-invC = inv(Chi);
+Chi  = e_sisj_c - mimj.* (ones(size(mi,1))-eye(size(mi,1))); % C = <sisj>_c - <si>_c*<sj>_c  
+%diagChi = diag(Chi);
 
-for i=1:size(Chi,1)
-    for j=i
-        Chi(i,j)=Chi(j,i);
-    end
-end
+%Chi = Chi - diag(diagChi,0) ; % except when i=j
+% make sure chi is symmetric
+% for i=1:size(Chi,1)
+%     for j=i
+%         Chi(i,j)=Chi(j,i);
+%     end
+% end
+
+invC = inv(Chi).* (ones(size(mi,1))-eye(size(mi,1)));%
 
 % this code tells us that matlab is running out of precision at the edges
 % for i=1:size(Chi,1)
@@ -95,13 +98,13 @@ end
 % end
 
 
-% calculate wij = d_ij/(1-mi)
+% calculate wij = d_ij/(1-mi) -invC
 
 one_minus_mi_sq = 1 - (mi .^2); % calculate 1-mi^2
 mi_matrix_form = ones(size(mi))*one_minus_mi_sq'; % make it into matrix form
-% make a matrix of ones with 0 on the diagonal to stand for d_ij
-kroneker_matrix = ones(size(mi,1))-eye(size(mi,1));
 w = eye(size(mi,1))./mi_matrix_form - invC;
+
+% w = inv(diag(diagChi,0))-invC;
 
 w(find(isnan(w)==1))=0; % find NaN in w and mark them as 0;
 w(find(w==inf))=1e5; % find inf in w and mark it really high
