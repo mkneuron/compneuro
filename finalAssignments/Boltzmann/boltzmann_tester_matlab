@@ -1,0 +1,61 @@
+function [confusion,total_true] = boltztest(noise)
+
+if nargin == 0
+    noise = 0.2;
+end
+
+ws = nan(784,784,10);
+thetas = nan(784,10);
+Fs    = nan(10,1);
+
+% train 10 machines, one for each digit
+for machine=0:9
+    [ws(:,:,machine+1),thetas(:,machine+1),Fs(machine+1)] = boltzMann(machine,noise);
+end
+
+% % energy is needed when assessing probability
+% energy = -1/2*sum(sum(w.*sisj)) - theta'*si;
+% logP=-energy/-F;
+% P=exp(logP);
+
+load('mnistAll.mat');
+noise=0.0;
+X=mnist.test_images;
+X=2*double(min(X,1))-1;
+X=X.*(1-2*(rand(size(X))<noise));
+
+%% test
+
+confusion = zeros(10,10);
+total_true = zeros(10,1);
+for test_image=1:size(X,3)
+    
+test28=X(:,:,test_image);
+test=double(test28(:));
+test2=test*test';
+
+if any(test_image==[0:50:size(X,3)])
+    sprintf(['test ' num2str(test_image) '/' num2str(size(X,3))])
+%end
+
+for machine_n0=1:10
+    % reg response = 1/exp(-Fs(i))*exp(1/2*sum(sum(ws(:,:,i).*test2))+thetas(:,i)'*test);
+    logResponse(machine_n0) = Fs(machine_n0) + ...
+        (1/2*sum(sum(ws(:,:,machine_n0).*test2))-thetas(:,machine_n0)'*test);
+end
+
+boltzguess = find(logResponse==max(logResponse))-1;
+actual     = mnist.test_labels(test_image);
+
+total_true(actual+1) = total_true(actual+1) + 1;
+
+% sprintf(['Guess = ' num2str(boltzguess) ', actual = ' num2str(actual)])
+% imagesc(test28)
+confusion(boltzguess+1,actual+1) = confusion(boltzguess+1,actual+1) + 1;
+
+end
+
+end
+diag(confusion)./total_true
+
+end
