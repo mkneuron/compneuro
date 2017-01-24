@@ -1,4 +1,4 @@
-function [confusion,total_true] = boltztest(noise)
+function [confusion,total_true,precise] = boltztest(noise)
 
 if nargin == 0
     noise = 0.2;
@@ -19,7 +19,7 @@ end
 % P=exp(logP);
 
 load('mnistAll.mat');
-noise=0.0;
+noise=0.1;
 X=mnist.test_images;
 X=2*double(min(X,1))-1;
 X=X.*(1-2*(rand(size(X))<noise));
@@ -34,11 +34,13 @@ test28=X(:,:,test_image);
 test=double(test28(:));
 test2=test*test';
 
-if any(test_image==[0:50:size(X,3)])
-    sprintf(['test ' num2str(test_image) '/' num2str(size(X,3))])
+if any(test_image==[0:20:size(X,3)])
+   % precise=diag(confusion)./total_true;
+   % sprintf(['test ' num2str(test_image) '/' num2str(size(X,3)) ', acc: ' num2str(mean(precise))])
 %end
 
 for machine_n0=1:10
+    
     % reg response = 1/exp(-Fs(i))*exp(1/2*sum(sum(ws(:,:,i).*test2))+thetas(:,i)'*test);
     logResponse(machine_n0) = Fs(machine_n0) + ...
         (1/2*sum(sum(ws(:,:,machine_n0).*test2))-thetas(:,machine_n0)'*test);
@@ -56,6 +58,4 @@ confusion(boltzguess+1,actual+1) = confusion(boltzguess+1,actual+1) + 1;
 end
 
 end
-diag(confusion)./total_true
 
-end
