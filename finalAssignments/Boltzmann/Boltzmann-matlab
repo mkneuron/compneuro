@@ -1,7 +1,5 @@
 function [w,theta,F] = boltzMann(I,noise)
 
-% I = 1; % digit we learn
-
 if nargin < 2
     noise = 0.2;
 end
@@ -25,27 +23,7 @@ D=28*28;
 
 %% init vars
 
-% init W 
-% w must be symmetric, and have aces in diagonal
-
-% next time I will loop over the whole matrix and just write over older values
-for i=1:D % loop over rows
-    for j = 1:i % in every row loop over one more column
-                % eg:
-                % j          % i = 1
-                % j j        % i = 2
-                % j j j      % i = 3
-        if i == j 
-            w(i,j)=0; % correlation with self
-        else
-            w(i,j)=rand()-0.5;
-            w(j,i)=w(i,j); % mirror correlation to the corresponding coordinate
-        end
-    end
-end
-
-N = D; % decorative renaming
-Neurons = sign(rand(N,1)-0.5); % initialize neurons to 1 or -1
+w=zeros(D,D);
 theta=zeros(D,1);
 P = size(XI,2); % number of patterns
 
@@ -53,68 +31,27 @@ P = size(XI,2); % number of patterns
 % E(si)_c = 1/p sum over patterns
 e_si_c = (1/P)*sum(XI,2); % 
 
-% Cheating follows here
-% the idea is to prevend weird math
-cheat = max(abs(e_si_c)); % normalize to avoid arctanh going to the complex plane
-cheat = 1; % cheaters never prosper
-e_si_c = e_si_c/cheat; % now si is between 1 and -1
-% because at some point we do 1-si^2(=1-1) and then divide with it we
-% have to add (or subtract) a small value from 1 and -1 to prevent infinities.
-
-if cheat 
-    
-else
-e_si_c(find(e_si_c==1))=0.99999; % find ones and make them smaller
-e_si_c(find(e_si_c==-1))=-0.99999; % find ones and make them larger
-end
 %% translate to mean field equations
 mi = e_si_c; % <si>c
-%<sisj>_c = correlation sum over patterns
-% when calculating C we divide mi by cheat twice, therefore...
-e_sisj_c = (1/P*(XI*XI'))/cheat^2;
-
+e_sisj_c = (1/P)*(XI*XI'); %<sisj>_c = correlation sum over patterns
 % mimj = mi*mj exept when i=j, then it's 1.
 mimj = (mi*mi');%.* (ones(size(mi,1))-eye(size(mi,1)));
 
 %% calculate mean field equations
-Chi  = e_sisj_c - mimj.* (ones(size(mi,1))-eye(size(mi,1))); % C = <sisj>_c - <si>_c*<sj>_c  
-%diagChi = diag(Chi);
-
-%Chi = Chi - diag(diagChi,0) ; % except when i=j
-% make sure chi is symmetric
-% for i=1:size(Chi,1)
-%     for j=i
-%         Chi(i,j)=Chi(j,i);
-%     end
-% end
-
-invC = inv(Chi).* (ones(size(mi,1))-eye(size(mi,1)));%
-
-% this code tells us that matlab is running out of precision at the edges
-% for i=1:size(Chi,1)
-%     for j=1:size(Chi,1)
-%         A(i,j) = Chi(i,j)==Chi(j,i);
-%     end
-% end
-
+% C = <sisj>_c - <si>_c*<sj>_c  
+Chi  = (e_sisj_c) - mimj.* (ones(size(mi,1))-eye(size(mi,1))); %
+Chi_ii = eye(size(mi,1))-diag(mi.^2,0);
+Chi = Chi+Chi_ii;
+invC = inv(Chi).* (ones(size(mi,1))-eye(size(mi,1)));
 
 % calculate wij = d_ij/(1-mi) -invC
 
-one_minus_mi_sq = 1 - (mi .^2); % calculate 1-mi^2
-mi_matrix_form = ones(size(mi))*one_minus_mi_sq'; % make it into matrix form
-w = eye(size(mi,1))./mi_matrix_form - invC;
+% one_minus_mi_sq = 1 - (mi .^2); % calculate 1-mi^2
+% mi_matrix_form = ones(size(mi))*one_minus_mi_sq'; % make it into matrix form
+w = inv(Chi_ii) - invC;
 
-% w = inv(diag(diagChi,0))-invC;
-
-w(find(isnan(w)==1))=0; % find NaN in w and mark them as 0;
-w(find(w==inf))=1e5; % find inf in w and mark it really high
-w(find(w==-inf))=-1e5; % find -inf in w and mark it really low
-
-% new theta
+% % new theta
 theta = atanh(mi)-(w*mi);
-theta(find(isnan(theta)==1))=0;  %find NaN in w and mark them as 0;
-theta(find(theta==inf))=1e5; % find inf in theta and mark it really high
-theta(find(theta==-inf))=-1e5; % find -inf in theta and mark it really low
 
 %compute mean field approximation for Z
 F = -1/2*sum(sum(w.*mimj)) ...
