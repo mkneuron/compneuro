@@ -39,22 +39,34 @@ mimj = (mi*mi');%.* (ones(size(mi,1))-eye(size(mi,1)));
 
 %% calculate mean field equations
 % C = <sisj>_c - <si>_c*<sj>_c  
-Chi  = (e_sisj_c) - mimj.* (ones(size(mi,1))-eye(size(mi,1))); %
+Chi  = (e_sisj_c) - sum(sum(mimj.* (ones(size(mi,1))-eye(size(mi,1))) )); 
 Chi_ii = eye(size(mi,1))-diag(mi.^2,0);
-Chi = Chi+Chi_ii;
 invC = inv(Chi).* (ones(size(mi,1))-eye(size(mi,1)));
 
 % calculate wij = d_ij/(1-mi) -invC
 
 % one_minus_mi_sq = 1 - (mi .^2); % calculate 1-mi^2
 % mi_matrix_form = ones(size(mi))*one_minus_mi_sq'; % make it into matrix form
-w = inv(Chi_ii) - invC;
-
+%  w = inv(Chi_ii) - invC;
+   w = diag(1./(1-mi.^2)) -inv(Chi);
+% for i=1:size(w,1)
+%     for j =1:size(w,2)
+%         w(i,j) = w(j,i);
+%     end
+% end
+% w(find(isnan(w)==1))=0; % find NaN in w and mark them as 0;
+% w(find(w==inf))=1e5; % find inf in w and mark it really high
+% w(find(w==-inf))=-1e5; % find -inf in w and mark it really low
+% 
 % % new theta
 theta = atanh(mi)-(w*mi);
+% theta(find(isnan(theta)==1))=0;  %find NaN in w and mark them as 0;
+% theta(find(theta==inf))=1e5; % find inf in theta and mark it really high
+% theta(find(theta==-inf))=-1e5; % find -inf in theta and mark it really low
 
 %compute mean field approximation for Z
-F = -1/2*sum(sum(w.*mimj)) ...
+F = -1/2*sum(sum((w*mi)'*mi)) ...
     -theta'*mi ...
-    +1/2*(1+mi')*log(1/2*(1+mi))+(1-mi')*log(1/2*(1-mi));
+    +1/2*((1+mi')*log(1/2*(1+mi))...
+         +(1-mi')*log(1/2*(1-mi)));
 end
