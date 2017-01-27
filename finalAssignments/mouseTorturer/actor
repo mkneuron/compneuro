@@ -1,0 +1,45 @@
+function [movement_direction_selected, weights_PlaceCell_to_ActorCell_change] = actor(number_of_actor_cells, critic_prediction_error, current_PlaceCells_firing, weights_PlaceCell_to_ActorCell)
+% INPUTS:
+% "current_PlaceCells_firing" is a vector containing the firing rate for
+% every place cell.
+% "weights_PlaceCell_to_ActorCell" is the wright from the place cell i to
+% the actor cell j.
+% "critic_prediction_error" comes from the Critic, its the difference between
+% seccessively occurring Critic outputs
+
+number_of_p_cells = numel(current_PlaceCells_firing);
+
+%% Compute probability of next movement.
+% "actor_cell_activity" is the preference for the rat to move in the j
+% direction when he is at location "current_position"
+actor_cell_activity = zeros(1, number_of_actor_cells);
+P_movement_direction = zeros(1, number_of_actor_cells);
+for j = 1:number_of_actor_cells
+    actor_cell_activity(1, j) = weights_PlaceCell_to_ActorCell*current_PlaceCells_firing;
+    P_movement_direction(1, j) = (exp(2*actor_cell_activity(1, j)))./(sum(exp(actor_cell_activity(1, j))));
+end
+if sum(P_movement_direction) ~= 1
+    warning('P_movement_direction is not normalized');
+end
+
+%% Decide action.
+% Scroll the probabilities, if a random number is between a probability
+% value p1 and p1 + the next one, then chose the corresponding action. 
+random_selector = rand();
+lower_bound = 0;
+movement_direction_selected = zeros(1, number_of_actor_cells);
+for j = 1:number_of_actor_cells
+    if (random_selector <= (P_movement_direction(1, j) + lower_bound)) && (random_selector > lower_bound)
+        movement_direction_selected(1, j) = 1;
+    end
+    lower_bound = P_movement_direction(1, j);
+end
+ 
+%% Update weights given the prediction error from the Critic.
+weights_PlaceCell_to_ActorCell_change = zeros(number_of_actor_cells, number_of_p_cells);
+for i = 1:number_of_p_cells
+    for j = 1:number_of_actor_cells
+        weights_PlaceCell_to_ActorCell_change(i, j) = critic_prediction_error.*current_PlaceCells_firing(1, i).*movement_direction_selected(1, j);
+    end
+end
+end
