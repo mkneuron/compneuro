@@ -1,0 +1,21 @@
+function [C,dt,dw]= Critic(spikeCounts,w_critic)
+
+% Theory:
+% A value function represents the value that is assigned to a position. 
+% The Critic's job is to learn the value of each position as defined by
+% the reward. In this instance, the reward is when the rat finds the 
+% platform and climbs on it to rest. The place cells that are active at
+% that moment receive a reward proportional to their activity. 
+% C is the Critic's interpretation of the value function.
+
+w  = w_critic;
+fi = spikeCounts;
+C = w*fi; % calculate C-value function
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%      TODO : put reward in the critic      %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+C = expected_C;
+dt = R_t + Expected_C - C; % prediction error
+dw = dt*fi;                % change in weights
