@@ -1,62 +1,65 @@
 function [  ] = actor_critic_assignment(  )
 % Main function
 
-number_of_actor_cells = 8; % This also corresponds to the number of possible directions.
-Pcel = 493; % number of place cells
-map_radius = 50; % radius in cm (aka pixels)
-p_std = 16; % place cell variance, aka sigma
+%% init vars
 
-% restrict_place forces the place cells to have centers inside the pool.
-% if it is set to 0, place cells can be centered outside the pool, but can
-% still be activated by positions inside the pool.
-restrict_place = 1; 
+n0_actCells = 8;   % This is equivalent to the number of possible actions
+n0_plaCells = 493; % number of place cells
+map_radius = 50;   % radius in cm (aka pixels)
+p_std = 16;        % place cell std, aka sigma
+strict_place = 1;  % forbid place cell centers outside maze
 
-% get environment map and coordinates of place cells
-[map,cell_coord] = RL_env(Pcel,map_radius,p_std,restrict_place);
-map_dimension = size(map, 2);
+%% get environment map and coordinates of place cells
+[map,cell_coord] = RL_env(n0_plaCells,map_radius,p_std,strict_place);
+map_dims = size(map, 2);
 
+%% initialize start and end points
 
-% get spike rates for cells
-activations = placeCells_spikeRate(position,cell_coord,p_std);
+% Find a valid starting position.
+have_start_pos = 0; % false
 
-
-%% Initialize variables.
-% Define rat starting position.
-FLAG_starting_position_found = 0;
-% Search a valid starting position.
-while FLAG_starting_position_found == 0
-    rat_start_position = [randi(1, map_dimension), randi(1, map_dimention)];
+while ~have_start_pos
+    % get random position
+    rat_start_position = [randi(map_dims), randi(map_dims)];
+    % check if it is inside the maze
     if map(rat_start_position(1,1), rat_start_position(1,2)) == 1
-        FLAG_starting_position_found = 1;
+        have_start_pos = 1; % set as true
     end
 end
-% Define goal platform position.
-FLAG_goal_position_found = 0;
-% Search a valid starting position.
-while FLAG_goal_position_found == 0
-    goal_platform_position = [randi(1, map_dimension), randi(1, map_dimention)];
-    if map(goal_platform_position(1,1), goal_platform_position(1,2)) == 1
-        FLAG_goal_position_found = 1;
+
+% find a valid end position
+have_platform = 0; % false
+
+while ~have_platform
+    goal_position = [randi(map_dims), randi(map_dims)];
+    if map(goal_position(1,1), goal_position(1,2)) == 1
+        have_platform = 1;
     end
 end
 
 % Initialize weights.
-weights_PlaceCell_to_ActorCell = rand(number_of_place_cells, number_of_actor_cells);
+w_place2actor = rand(n0_plaCells, n0_actCells);
 
-%% Actor choose (plausible) action.
-FLAG_allowed_move = 0;
-while FLAG_allowed_move == 0
-    [movement_direction_selected, weights_PlaceCell_to_ActorCell_change] = actor(number_of_actor_cells, critic_prediction_error, current_PlaceCells_firing, weights_PlaceCell_to_ActorCell);
+%% Actor-Critic loop
+% get spike rates for place cells
+position = rat_start_position;
+spikeCounts = placeCells_spikeRate(position,cell_coord,p_std);
+
+%% Actor choose an allowed action.
+is_legal = 0;
+while ~is_legal % illegal memes, ermmm moves I mean
+    [direction, w_place2actor_dx] = actor(n0_actCells, critic_PrErr, ... 
+                                          spikeCounts, w_place2actor);
     % Move the bloody rat.
-    [updated_position] = move_rat (current_position, movement_direction_selected);
+    [updated_position] = move_rat (current_position, direction);
     if map(updated_position(1,1), updated_position(1,2)) == 1
-        FLAG_allowed_move = 1;
+        is_legal = 1;
     else
         warning('Dumb rat wants to exit the swimming pool'); % dumb rat doesn't know any better
     end
 end
+
 % Update Weights for the Actor.
-weights_PlaceCell_to_ActorCell = weights_PlaceCell_to_ActorCell + weights_PlaceCell_to_ActorCell_change;
+w_place2actor = w_place2actor + w_place2actor_dx;
 
 end
-
