@@ -1,0 +1,47 @@
+function [map,cell_coord] = RL_env(Pcel,map_radius,p_std,restrict_place)
+
+fprintf('Experiment initialized. \n')
+
+if nargin < 4
+    restrict_place = 1; % restrict place cells to stay inside the map
+end
+
+
+
+%% construct a pool in shape of a circle
+
+map = zeros(2*map_radius);
+for i=1:size(map,1)
+    for j=1:size(map,2)
+        % calculate polar coordinates
+        if sqrt((i-map_radius-0.5)^2 + (j-map_radius-0.5)^2) < 50
+            map(i,j)=1;
+        end
+    end
+end
+fprintf('Map ready. \n')
+%% put place cells in map
+fprintf('Place cells in position... \n')
+
+cell_pos = zeros(size(map)); % start with 0 cells
+cell_count = Pcel;
+while cell_count>0 % unplaced place cells
+    
+    % get random coordinates
+    x = randi(size(map,1));
+    y = randi(size(map,2));
+    % check if position is in map and if it has a place cell
+    if cell_pos(x,y) || (restrict_place && ~map(x,y))
+        % code used to be here but the architecture changed. I'm too lazy
+        % to change the logic though
+    else
+        cell_pos(x,y) = 1; % the position was empty, have a place cell.
+        cell_count = cell_count-1;
+    end
+    
+end
+
+cell_coord = nan(2,Pcel);
+[cell_coord(1,:),cell_coord(2,:)] = find(cell_pos);
+fprintf('%d place cells in position. \n',  size(cell_coord,2));
+%%
