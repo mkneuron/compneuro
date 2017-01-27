@@ -1,0 +1,62 @@
+function [  ] = actor_critic_assignment(  )
+% Main function
+
+number_of_actor_cells = 8; % This also corresponds to the number of possible directions.
+Pcel = 493; % number of place cells
+map_radius = 50; % radius in cm (aka pixels)
+p_std = 16; % place cell variance, aka sigma
+
+% restrict_place forces the place cells to have centers inside the pool.
+% if it is set to 0, place cells can be centered outside the pool, but can
+% still be activated by positions inside the pool.
+restrict_place = 1; 
+
+% get environment map and coordinates of place cells
+[map,cell_coord] = RL_env(Pcel,map_radius,p_std,restrict_place);
+map_dimension = size(map, 2);
+
+
+% get spike rates for cells
+activations = placeCells_spikeRate(position,cell_coord,p_std);
+
+
+%% Initialize variables.
+% Define rat starting position.
+FLAG_starting_position_found = 0;
+% Search a valid starting position.
+while FLAG_starting_position_found == 0
+    rat_start_position = [randi(1, map_dimension), randi(1, map_dimention)];
+    if map(rat_start_position(1,1), rat_start_position(1,2)) == 1
+        FLAG_starting_position_found = 1;
+    end
+end
+% Define goal platform position.
+FLAG_goal_position_found = 0;
+% Search a valid starting position.
+while FLAG_goal_position_found == 0
+    goal_platform_position = [randi(1, map_dimension), randi(1, map_dimention)];
+    if map(goal_platform_position(1,1), goal_platform_position(1,2)) == 1
+        FLAG_goal_position_found = 1;
+    end
+end
+
+% Initialize weights.
+weights_PlaceCell_to_ActorCell = rand(number_of_place_cells, number_of_actor_cells);
+
+%% Actor choose (plausible) action.
+FLAG_allowed_move = 0;
+while FLAG_allowed_move == 0
+    [movement_direction_selected, weights_PlaceCell_to_ActorCell_change] = actor(number_of_actor_cells, critic_prediction_error, current_PlaceCells_firing, weights_PlaceCell_to_ActorCell);
+    % Move the bloody rat.
+    [updated_position] = move_rat (current_position, movement_direction_selected);
+    if map(updated_position(1,1), updated_position(1,2)) == 1
+        FLAG_allowed_move = 1;
+    else
+        warning('Dumb rat wants to exit the swimming pool'); % dumb rat doesn't know any better
+    end
+end
+% Update Weights for the Actor.
+weights_PlaceCell_to_ActorCell = weights_PlaceCell_to_ActorCell + weights_PlaceCell_to_ActorCell_change;
+
+end
+
