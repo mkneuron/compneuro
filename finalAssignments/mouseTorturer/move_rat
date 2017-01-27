@@ -1,0 +1,48 @@
+function [updated_position] = move_rat(current_position, movement_direction_selected)
+% INPUT VARIABLES
+% "movement_direction_selected" is a 1xnumber_of_actor_cells
+% (=1xnumber_of_possible_directions) vector, where the only element = 1 is
+% the chosen direction.
+% "current_position" is a 1x2 array, with the row and column of the position
+% matrix.
+% INSIDE VARIABLES
+% "movement" is a 1x2 array, where the 1st element is the movement in the x
+% direction and the 2nd element the movement in the y direction: both
+% elements can have value of -1, 0, +1, depending on the direction on that
+% axis.
+
+
+% Defining movement direction.
+movement_tmp = find(movement_direction_selected);
+if isempty(movement_tmp)
+    warning('Lazy rat did not move');
+end
+
+% goddamn it Niccolo what's this
+switch movement_tmp
+    case 1  % S
+        movement(1, 1) = 0; movement(1, 2) = -1;
+    case 2  % SE
+        movement(1, 1) = 1; movement(1, 2) = -1;
+    case 3  % E
+        movement(1, 1) = 1; movement(1, 2) = 0;
+    case 4  % NE
+        movement(1, 1) = 1; movement(1, 2) = 1;
+    case 5  % N
+        movement(1, 1) = 0; movement(1, 2) = 1;
+    case 6  % NW
+        movement(1, 1) = -1; movement(1, 2) = 1;
+    case 7  % W
+        movement(1, 1) = -1; movement(1, 2) = 0;
+    case 8  % SW
+        movement(1, 1) = -1; movement(1, 2) = -1;
+    otherwise
+        movement(1, 1) = 0; movement(1, 2) = 0; % No movement
+end
+
+% Move.
+current_position_x = current_position(1, 1);
+current_position_y = current_position(1, 2);
+updated_position(1, 1) = current_position_x + movement(1, 1);
+updated_position(1, 2) = current_position_y + movement(1, 2);
+end
