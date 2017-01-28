@@ -1,6 +1,27 @@
 function [  ] = actor_critic_assignment(  )
 % Main function
 
+%% TODOS
+%{
+
+Set dimensions to:
+2-m-diameter circular watermaze, 
+0.1-m-diameter escape platform. 
+swimming speed of the rat is constant at 0.3 ms^-1
+
+Set walls as reflective boundaries
+Treat space as continuous
+Discretize time in 0.1s
+
+Model momentum: Make probability of movement 25% the decision of the actor
+and 75% just repeat the previous decision.
+
+Compute 4 starting locations at  north, south, east, and west
+edges  of  the  pool, one for each time we run the experiment per day.
+
+Make trials end after 120 seconds
+
+%}
 %% init vars
 
 n0_actCells = 8;   % This is equivalent to the number of possible actions
@@ -46,7 +67,7 @@ position = rat_start_position;
 spikeCounts = placeCells_spikeRate(position,cell_coord,p_std);
 
 %% Actor choose an allowed action.
-is_legal = 0;
+is_legal = 0; % maraveyas ilegal
 while ~is_legal % illegal memes, ermmm moves I mean
     [direction, w_place2actor_dx] = actor(n0_actCells, critic_PrErr, ... 
                                           spikeCounts, w_place2actor);
@@ -55,7 +76,8 @@ while ~is_legal % illegal memes, ermmm moves I mean
     if map(updated_position(1,1), updated_position(1,2)) == 1
         is_legal = 1;
     else
-        warning('Dumb rat wants to exit the swimming pool'); % dumb rat doesn't know any better
+        warning('Dumb rat wants to exit the swimming pool'); 
+        % dumb rat don't know no better
     end
 end
 
@@ -63,3 +85,4 @@ end
 w_place2actor = w_place2actor + w_place2actor_dx;
 
 end
+
