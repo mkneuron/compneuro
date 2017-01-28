@@ -1,25 +1,42 @@
 function [  ] = actor_critic_assignment(  )
 % Main function
-
 %% TODOS
 %{
 
-Set dimensions to:
-2-m-diameter circular watermaze, 
-0.1-m-diameter escape platform. 
-swimming speed of the rat is constant at 0.3 ms^-1
+Environment TODO:
+--------
+* Set dimensions to:
+    2-m-diameter circular watermaze, 
+    0.1-m-diameter escape platform. 
+    set swimming speed of the rat at 0.3 ms^-1
 
-Set walls as reflective boundaries
-Treat space as continuous
-Discretize time in 0.1s
+* Set walls as reflective boundaries
+* Treat space as continuous
+* Discretize time in 0.1s
 
-Model momentum: Make probability of movement 25% the decision of the actor
+* Make sure all values relfect the changes, including sigma
+
+Rat movement TODO:
+--------
+* Model momentum: Make probability of movement 25% the decision of the actor
 and 75% just repeat the previous decision.
 
-Compute 4 starting locations at  north, south, east, and west
+Initialize start and end points TODO:
+--------
+* Compute 4 starting locations at  north, south, east, and west
 edges  of  the  pool, one for each time we run the experiment per day.
 
-Make trials end after 120 seconds
+
+Actor-Critic loop TODO:
+--------
+* Every set of 4 trials must contain a different location. 
+* Make trials end after 120 seconds
+* loop up to at least 22 trials (this is for the figures)
+* Close actor-critic loop
+
+Plotting TODO:
+--------
+* Basically everything
 
 %}
 %% init vars
@@ -62,12 +79,22 @@ end
 w_place2actor = rand(n0_plaCells, n0_actCells);
 
 %% Actor-Critic loop
+%{ 
+TODO:
+
+Every set of 4 trials must contain a different location. 
+Make trials end after 120 seconds
+Up to 22 trials
+Close actor-critic loop
+
+%}
+
 % get spike rates for place cells
 position = rat_start_position;
 spikeCounts = placeCells_spikeRate(position,cell_coord,p_std);
 
 %% Actor choose an allowed action.
-is_legal = 0; % maraveyas ilegal
+is_legal = 0; % 
 while ~is_legal % illegal memes, ermmm moves I mean
     [direction, w_place2actor_dx] = actor(n0_actCells, critic_PrErr, ... 
                                           spikeCounts, w_place2actor);
@@ -85,4 +112,3 @@ end
 w_place2actor = w_place2actor + w_place2actor_dx;
 
 end
-
