@@ -2,36 +2,15 @@ function [  ] = actor_critic_assignment(  )
 % Main function
 %% TODOS
 %{
-
 Environment TODO:
 --------
-* Set environment dimensions to:
-    2-m-diameter circular watermaze,
-    0.1-m-diameter escape platform.
-    set swimming speed of the rat at 0.3 ms^-1
-
-* Set walls as reflective boundaries % DONE
-* Treat space as continuous % Leave for last, only if we have time
-* Discretize time in 0.1s DONE
-
-* Make sure all values relfect the changes, including sigma
-
-Rat movement TODO:
---------
-* Model momentum: Make probability of movement 25% the decision of the actor
-and 75% just repeat the previous decision. DONE
-
-Initialize start and end points TODO:
---------
-* Compute 4 starting locations at  north, south, east, and west
-edges  of  the  pool, one for each time we run the experiment per day.
+Make sure that all values make sense.
+e.g. map_radius
 
 Actor-Critic loop TODO:
 --------
 * implement learning rate
 * Every set of 4 trials must contain a different location. STILL NEEDS WORK
-* Make trials end after 120 seconds DONE
-* loop up to at least 22 trials (this is for the figures) DONE
 * Close actor-critic loop
 
 Plotting TODO:
@@ -41,45 +20,32 @@ Plotting TODO:
 %}
 %% init vars
 
-n0_actCells = 8;        % equivalent to the number of possible actions
-n0_plaCells = 493;      % number of place cells
-map_radius = 50;        % radius in cm (aka pixels)
+act_Cells = 8;        % equivalent to the number of possible actions
+P_Cels = 493;      % number of place cells
+pool_radius = 133;      % radius in cm (aka pixels ?)
+platform_R = 6;         % platform radius in cm (aka pixels ?)
 p_std = 16;             % place cell std, aka sigma
 strict_place = 1;       % forbid place cell centers outside maze
 totalTrials = 22;       % number of total trials
 plat_posit = 1:4;       % number of platform positions
 timeline = 1:0.1:120;   % time as described in paper
-%% get environment map and coordinates of place cells
-[map,cell_coord] = RL_env(n0_plaCells,map_radius,p_std,strict_place);
-map_dims = size(map, 2);
+random_start = 0;       % Default 0: Rat will start from either W\S\E\N.
 
-%% initialize start and end points
+%% Get environment map and coordinates of place cells
+% e.g. [map, cell_coord, platform_mask] = ...
+%       RL_env(Pcel, pool_radius, platform_R, p_std, strict_place)
+[map, cell_coord, platform] = RL_env(P_Cels,pool_radius, ...
+                                     platform_R,p_std,strict_place); 
+map_dims=size(map,2); % map dimensions
 
-% Find a valid starting position.
-have_start_pos = 0; % false
+%% Initialize start and end points
+% Define rat starting position.
 
-while ~have_start_pos
-    % get random position
-    rat_start_position = [randi(map_dims), randi(map_dims)];
-    % check if it is inside the maze
-    if map(rat_start_position(1,1), rat_start_position(1,2)) == 1
-        have_start_pos = 1; % set as true
-    end
-end
 
-% find a valid end position
-have_platform = 0; % false
-
-while ~have_platform
-    goal_position = [randi(map_dims), randi(map_dims)];
-    if map(goal_position(1,1), goal_position(1,2)) == 1
-        have_platform = 1;
-    end
-end
-
-% Initialize weights.
-w_place2actor = rand(n0_plaCells, n0_actCells);
-
+%% Initialize weights.
+% actor weights as named in the paper
+z_ij = rand(P_Cels, act_Cells); % weights place cell to actor
+w_critic      = zeros(P_Cels,1);  % weights of critic
 %% Actor-Critic loop
 %{
 TODO:
@@ -94,58 +60,79 @@ TODO:
 for trialN0=1:totalTrials
     
     % iterators
-    plat = plat +1; % iterates through the platform positions
+    daily_trial = daily_trial +1; % iterates through the platform positions
     
-    % reorder platforms every new day
-    if mod(trialN0,4) == 0 % every fourth trial
-        platform(:) = randperm(4); % randomize the order of the platforms
-        plat = 1; % reset platform iterator
+    % reset each trial
+    Cprev = 0;
+    
+    % reset day
+    if mod(trialN0-1,5) == 0 % every fourth trial 
+        rat_start_position = voluntary_jump(map_dims,pool_radius);
+        daily_trial = 0; % reset platform iterator
     end
-    
-    % get spike rates for place cells
-    position = rat_start_position;
-    spikeCounts = placeCells_spikeRate(position,cell_coord,p_std);
-    
-    %% Actor choose an allowed action.
-    
-    % this needs to go away because the boundaries now bounce the mouse off
-    is_legal = 0; %
-    while ~is_legal
-        [direction, w_place2actor_dx] = actor(n0_actCells, critic_PrErr, ...
-            spikeCounts, w_place2actor);
-        % Move the bloody rat.
-        [updated_position] = move_rat (current_position, direction);
-        if map(updated_position(1,1), updated_position(1,2)) == 1
-            is_legal = 1;
-        else
-            warning('Dumb rat wants to exit the swimming pool');
-            % dumb rat don't know no better
+
+    for t=1:length(timeline)
+        
+        % get spike rates for place cells
+        position = rat_start_position; % ATTN: should this be randomized?
+        spikeCounts = placeCells_spikeRate(position,cell_coord,p_std);
+        
+        %% Actor choose an allowed action.
+        
+        % this needs to go away because the boundaries now are bouncy
+        is_legal = 0; %
+        while ~is_legal
+            
+            % Move the bloody rat.
+            [updated_position] = move_rat (current_position, direction);
+            if map(updated_position(1,1), updated_position(1,2)) == 1
+                is_legal = 1;
+            else
+                warning('Dumb rat wants to exit the swimming pool');
+                % dumb rat don't know no better
+            end
         end
+        
+        % Momentum: 25% time, the actor decides on change of movement. The
+        % other 75% the mouse keeps going in a direction.
+        
+        [direction, z_ij_dx] = actor(act_Cells, pred_err, spikeCounts, z_ij);
+        if rand > 0.75
+            updated_position = direction;
+            momentum = updated_position-position;
+        else
+            momentum = position-old_position;
+            updated_position = position + momentum;
+        end
+        
+        % check if the mouse hit the boundary. If it did, bounce it off.
+        if map(updated_position(1,1), updated_position(1,2)) == 0
+            updated_position = updated_position -2*momentum;
+        end
+        
+        % update positions
+        old_position = position; % needed to calculate momentum
+        position     = updated_position;
+        
+        %% Critic Output:
+        % C : The critic's take of the value function
+        % dt: Prediction Error
+        % dw: change in weights
+        %% Critic Input:
+        % spikeCounts: accessible with placeCells_spikeRate()
+        % w_critic   : the weights of the critic
+        % Reward     : reward
+        % Cprev      : The C that is output by the critic in t-1, see below
+        % The value function is calculated with C_t+1, but since we can't
+        % predict the future we make everyhting go a step back in time.
+        
+        % [C-value fuction, prediction error, change in weights]
+        [C,pred_err,dw]= Critic(spikeCounts,w_critic,Reward,Cprev);
+        Cprev=C;
+        
+        % Update Weights
+        z_ij = z_ij + z_ij_dx; % actor
+        w_critic= w_critic + eta_c*dw;  % critic
     end
-    
-    % Momentum: 25% time, the actor decides on change of movement. The
-    % other 75% the mouse keeps going in a direction. 
-    
-
-    if rand > 0.75 
-        updated_position = move_rat(current_position, direction);
-        momentum = updated_position-position;
-    else
-        momentum = position-old_position;
-        updated_position = position + momentum;
-    end
-    
-    % check if the mouse hit the boundary. If it did, bounce it off. 
-    if map(updated_position(1,1), updated_position(1,2)) == 0
-         updated_position = updated_position -2*momentum; 
-    end
-    
-    % update positions
-    old_position = position; % needed to calculate momentum
-    position     = updated_position;
-
-    % Update Weights for the Actor.
-    w_place2actor = w_place2actor + w_place2actor_dx;
 end
 end
-
