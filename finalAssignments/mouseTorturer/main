@@ -29,7 +29,7 @@ strict_place = 1;       % forbid place cell centers outside maze
 totalTrials = 22;       % number of total trials
 plat_posit = 1:4;       % number of platform positions
 timeline = 1:0.1:120;   % time as described in paper
-random_start = 0;       % Default 0: Rat will start from either W\S\E\N.
+random_start = 0;       % toggle random start (see voluntary_jump.m) 
 
 %% Get environment map and coordinates of place cells
 % e.g. [map, cell_coord, platform_mask] = ...
@@ -42,10 +42,7 @@ map_dims=size(map,2); % map dimensions
 % Define rat starting position.
 
 
-%% Initialize weights.
-% actor weights as named in the paper
-z_ij = rand(P_Cels, act_Cells); % weights place cell to actor
-w_critic      = zeros(P_Cels,1);  % weights of critic
+
 %% Actor-Critic loop
 %{
 TODO:
@@ -57,41 +54,51 @@ TODO:
 * Close actor-critic loop
 
 %}
+
+% Initialize weights.
+% actor weights as named in the paper
+z_ij = rand(P_Cels, act_Cells); % weights place cell to actor
+w_critic      = zeros(P_Cels,1);  % weights of critic
+
+% init loop variables
+daily_trial = 0;
+pred_err    = 0;
 for trialN0=1:totalTrials
+
+    % reset each day
+    if mod(trialN0-1,5) == 0 % every fourth trial 
+        rat_position_v = voluntary_jump(map_dims,pool_radius);
+        daily_trial = 0; % reset platform iterator
+    end
     
     % iterators
     daily_trial = daily_trial +1; % iterates through the platform positions
     
     % reset each trial
     Cprev = 0;
+    rat_position = rat_position_v(daily_trial,:);
     
-    % reset day
-    if mod(trialN0-1,5) == 0 % every fourth trial 
-        rat_start_position = voluntary_jump(map_dims,pool_radius);
-        daily_trial = 0; % reset platform iterator
-    end
-
-    for t=1:length(timeline)
+    for t=1:length(timeline) % single trial loop
         
         % get spike rates for place cells
-        position = rat_start_position; % ATTN: should this be randomized?
-        spikeCounts = placeCells_spikeRate(position,cell_coord,p_std);
+        
+        spikeCounts = placeCells_spikeRate(rat_position,cell_coord,p_std);
         
         %% Actor choose an allowed action.
         
         % this needs to go away because the boundaries now are bouncy
-        is_legal = 0; %
-        while ~is_legal
-            
-            % Move the bloody rat.
-            [updated_position] = move_rat (current_position, direction);
-            if map(updated_position(1,1), updated_position(1,2)) == 1
-                is_legal = 1;
-            else
-                warning('Dumb rat wants to exit the swimming pool');
-                % dumb rat don't know no better
-            end
-        end
+%         is_legal = 0; %
+%         while ~is_legal
+%             
+%             % Move the bloody rat.
+%             [updated_position] = move_rat (rat_position, direction);
+%             if map(updated_position(1,1), updated_position(1,2)) == 1
+%                 is_legal = 1;
+%             else
+%                 warning('Dumb rat wants to exit the swimming pool');
+%                 % dumb rat don't know no better
+%             end
+%         end
         
         % Momentum: 25% time, the actor decides on change of movement. The
         % other 75% the mouse keeps going in a direction.
@@ -99,10 +106,10 @@ for trialN0=1:totalTrials
         [direction, z_ij_dx] = actor(act_Cells, pred_err, spikeCounts, z_ij);
         if rand > 0.75
             updated_position = direction;
-            momentum = updated_position-position;
+            momentum = updated_position-rat_position;
         else
             momentum = position-old_position;
-            updated_position = position + momentum;
+            updated_position = rat_position + momentum;
         end
         
         % check if the mouse hit the boundary. If it did, bounce it off.
@@ -111,8 +118,8 @@ for trialN0=1:totalTrials
         end
         
         % update positions
-        old_position = position; % needed to calculate momentum
-        position     = updated_position;
+        old_position     = rat_position; % needed to calculate momentum
+        rat_position     = updated_position;
         
         %% Critic Output:
         % C : The critic's take of the value function
