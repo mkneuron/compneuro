@@ -17,7 +17,7 @@
 %}
 %%
 clear all
-F=1;
+F=1; % force it to shut up
 rand('seed',0);
 load('mnistAll.mat')
 noise=0.2;
@@ -84,7 +84,7 @@ imax=1000;
 E_all=zeros(1,imax);
 dw=1;
 i=0;
-a=0.0;%12; % momentum term
+a=0.0; % momentum term
 momentum1 = 0;
 momentum2 = 0;
 
@@ -104,6 +104,7 @@ f_y = @ (X,w) theta(-w * X);
 % h1_dx = @(x) logistic(x).*(1-logistic(x));
 % h2_dx = @(x) logistic(x).*(1-logistic(x));
 
+% linear activation function
 % % h1 = @(x) x;
 % h2 = @(x) x;
 % % h1_dx = @(x) x;
@@ -115,9 +116,10 @@ h1_dx = @(x) (1-tanh(tanh(x)));
 h2_dx = @(x) (1-tanh(tanh(x)));
 
 % relu
-h1 = @(x) max(0,x); % relu
-h1_dx = @(x) x>0; % derivative of relu
-
+% h1 = @(x) max(0,x); % relu
+% h1_dx = @(x) x>0; % derivative of relu
+% h2 = @(x) max(0,x); % relu
+% h2_dx = @(x) x>0; % derivative of relu
 
 % Xt = Xt*2/785;
 
@@ -156,7 +158,7 @@ while (dw>eps1)&&(i<imax),
     end
     
     if any(i==[0:250:imax])
-        eta=eta*0.3
+        eta=eta*0.3;
     end
     % compute forward propagation
     
@@ -210,10 +212,10 @@ while (dw>eps1)&&(i<imax),
     ykr = round(yk);
     prev = ykr ~= yt;
 
-    assert7 = yk>0;
-    is7     = yt>0;
-    assert3 = yk<0;
-    is3     = yt<0;
+    assert7 = yk>0; % network says it's 7
+    is7     = yt>0; % it's actually 7
+    assert3 = yk<0; % network says it's 3
+    is3     = yt<0; % it's actually 3
     E = 0;
     E = E + sum(assert7 ~= is7);
 
