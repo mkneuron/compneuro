@@ -18,26 +18,26 @@ if isempty(movement_tmp)
     warning('Lazy rat did not move');
 end
 
-% goddamn it Niccolo what's this
+% goddamn it Niccolo
 switch movement_tmp
     case 1  % S
-        movement(1, 1) = 0; movement(1, 2) = -1;
+        movement(1, 1) =  0; movement(1, 2) = -1;
     case 2  % SE
-        movement(1, 1) = 1; movement(1, 2) = -1;
+        movement(1, 1) =  1; movement(1, 2) = -1;
     case 3  % E
-        movement(1, 1) = 1; movement(1, 2) = 0;
+        movement(1, 1) =  1; movement(1, 2) =  0;
     case 4  % NE
-        movement(1, 1) = 1; movement(1, 2) = 1;
+        movement(1, 1) =  1; movement(1, 2) =  1;
     case 5  % N
-        movement(1, 1) = 0; movement(1, 2) = 1;
+        movement(1, 1) =  0; movement(1, 2) =  1;
     case 6  % NW
-        movement(1, 1) = -1; movement(1, 2) = 1;
+        movement(1, 1) = -1; movement(1, 2) =  1;
     case 7  % W
-        movement(1, 1) = -1; movement(1, 2) = 0;
+        movement(1, 1) = -1; movement(1, 2) =  0;
     case 8  % SW
         movement(1, 1) = -1; movement(1, 2) = -1;
     otherwise
-        movement(1, 1) = 0; movement(1, 2) = 0; % No movement
+        movement(1, 1) =  0; movement(1, 2) =  0; % No movement
 end
 
 % Move.
