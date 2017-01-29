@@ -1,21 +1,22 @@
-function [direction, w_place2actor_dx] = actor(n0_actCells, crit_PrErr, spikeRates, w_place2actor)
+function [direction, z_ij_dx] = actor(act_Cells, spikeCounts, pred_err,z_ij)
 % INPUTS:
-% "spikeRates" is a vector containing the firing rate for every place cell.
-% "w_place2actor" is the weight from the place cell i to the actor cell j.
-% "crit_PrErr" comes from the Critic, its the difference between
+% "spikeCounts" is a vector containing the firing rate for every place cell.
+% "z_ij" is the weight from the place cell i to the actor cell j.
+% "pred_err" comes from the Critic, its the difference between
 % seccessively occurring Critic outputs
 
-n0_plaCells = numel(spikeRates);
+n0_plaCells = numel(spikeCounts);
 
 %% Compute probability of next movement.
 % "actor_cell_activity" is the preference for the rat to move in the j
 % direction when he is at location "current_position"
-actor_cell_activity = zeros(1, n0_actCells);
-P_movement_direction = zeros(1, n0_actCells);
-for j = 1:n0_actCells
-    actor_cell_activity(1, j) = w_place2actor*spikeRates;
-    P_movement_direction(1, j) = (exp(2*actor_cell_activity(1, j)))./...
-                                 (sum(exp(actor_cell_activity(1, j))));
+
+P_movement_direction = zeros(1, act_Cells);
+actor_cell_activity= z_ij'*spikeCounts;
+
+for j = 1:act_Cells
+    P_movement_direction(j) = (exp(2*actor_cell_activity(j)))./...
+                                 (sum(exp(actor_cell_activity)));
 end
 if sum(P_movement_direction) ~= 1
     warning('P_movement_direction is not normalized');
@@ -26,8 +27,8 @@ end
 % value p1 and p1 + the next one, then chose the corresponding action. 
 random_selector = rand();
 lower_bound = 0;
-direction = zeros(1, n0_actCells);
-for j = 1:n0_actCells
+direction = zeros(1, act_Cells);
+for j = 1:act_Cells
     if (random_selector <= (P_movement_direction(1, j) + lower_bound)) && ...
                                             (random_selector > lower_bound)
         direction(1, j) = 1;
@@ -36,10 +37,10 @@ for j = 1:n0_actCells
 end
  
 %% Update weights given the prediction error from the Critic.
-w_place2actor_dx = zeros(n0_actCells, n0_plaCells);
+z_ij_dx = zeros(act_Cells, n0_plaCells);
 for i = 1:n0_plaCells
-    for j = 1:n0_actCells
-        w_place2actor_dx(i, j) = crit_PrErr.*current_PlaceCells_firing(1, i).*direction(1, j);
+    for j = 1:act_Cells
+        z_ij_dx(i, j) = pred_err.*z_ij(i,j).*direction(1, j);
     end
 end
 end
