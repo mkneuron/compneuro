@@ -1,0 +1,76 @@
+function rat_start_position = voluntary_jump(map_dimension, pool_radius,random,serial)
+% A rat jumps into the pool out of its own volition, four times per day.
+% This function calculates where it lands.
+%% INPUT
+% map_dimension : dimension of one side of the map (square map assumed) 
+% random        : option to just return random position [T/F]
+% pool_radius   : radius of the circlular pool
+% serial        : option to return 4 predefined positions in random order [T/F]
+
+%% OUTPUT
+% rat_start_position : coordinates of the rat's position in a 2D maze
+
+
+%% CHANGELOG:
+%{  
+    * The function now has the option to progress through the set points 
+      serially
+    * Fix rat being positioned outside the maze DONE
+%}
+
+%% Function:
+% Default value.
+if nargin < 3
+    random = 0;
+end
+
+if nargin < 4
+    serial = 1;
+end
+
+% Define rat starting position.
+
+% in case of random position
+if random == 1
+    fprintf('Rat will start each trial from a random position.\n');
+    FLAG_starting_position_found = 0;
+    % Search a valid starting position.
+    while FLAG_starting_position_found == 0
+        rat_start_position = [randi(1, map_dimension), randi(1, map_dimention)];
+        if map(rat_start_position(1,1), rat_start_position(1,2)) == 1
+            FLAG_starting_position_found = 1;
+        end
+    end
+
+% in case of fixed position
+elseif random == 0 && ~serial % Start from either W/S/E/N fixed positions
+    fprintf('Rat will start each trial from one between 4 fixed opposite positions on the border.\n');
+    WSEN = randi([1, 4]);
+switch WSEN
+    case 1  % West
+        rat_start_position = [pool_radius, 1];
+    case 2  % South
+        rat_start_position = [2*pool_radius, pool_radius];
+    case 3  % East
+        rat_start_position = [pool_radius, 2*pool_radius];
+    case 4  % North
+        rat_start_position = [1, pool_radius];
+end
+
+elseif ~random && serial
+    % all positions in a vector
+    v = [pool_radius  ,      1        ; 
+         2*pool_radius, pool_radius   ; 
+         pool_radius  , 2*pool_radius ;
+              1       , pool_radius  ];
+    order = randperm(4);
+    for i=1:4
+        position(i,:) = v(order(i),:);
+    end
+    rat_start_position = position;
+else % FLAGs must be logic variables. Also, random AND serial is retarded.
+    error(['random must be either 0 or 1 and serial must be 0 or randperm(4)'...
+            '. Random and Serial cannot be used together. \n']);
+end
+
+end
