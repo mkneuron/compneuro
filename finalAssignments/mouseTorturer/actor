@@ -30,17 +30,21 @@ lower_bound = 0;
 direction = zeros(1, act_Cells);
 for j = 1:act_Cells
     if (random_selector <= (P_movement_direction(1, j) + lower_bound)) && ...
-                                            (random_selector > lower_bound)
+                                       (random_selector > lower_bound)
         direction(1, j) = 1;
     end
     lower_bound = P_movement_direction(1, j);
 end
  
 %% Update weights given the prediction error from the Critic.
+
 z_ij_dx = zeros(act_Cells, n0_plaCells);
-for i = 1:n0_plaCells
-    for j = 1:act_Cells
-        z_ij_dx(i, j) = pred_err.*z_ij(i,j).*direction(1, j);
-    end
+for i = 1:act_Cells
+   z_ij_dx(i,:) = pred_err * z_ij(:,i) * direction(i);
 end
+% for i = 1:n0_plaCells
+%     for j = 1:act_Cells
+%         z_ij_dx(i, j) = pred_err.*z_ij(i,j).*direction(1, j);
+%     end
+% end
 end
