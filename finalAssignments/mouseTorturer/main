@@ -10,8 +10,6 @@ e.g. map_radius
 Actor-Critic loop TODO:
 --------
 * implement learning rate
-* Every set of 4 trials must contain a different location. STILL NEEDS WORK
-* Close actor-critic loop
 
 Plotting TODO:
 --------
@@ -20,16 +18,18 @@ Plotting TODO:
 %}
 %% init vars
 
-act_Cells = 8;        % equivalent to the number of possible actions
-P_Cels = 493;      % number of place cells
+act_Cells = 8;          % equivalent to the number of possible actions
+P_Cels = 493;           % number of place cells
 pool_radius = 133;      % radius in cm (aka pixels ?)
 platform_R = 6;         % platform radius in cm (aka pixels ?)
 p_std = 16;             % place cell std, aka sigma
 strict_place = 1;       % forbid place cell centers outside maze
 totalTrials = 22;       % number of total trials
 plat_posit = 1:4;       % number of platform positions
-timeline = 1:0.1:120;   % time as described in paper
+timeline = 0:0.1:120;   % time as described in paper
 random_start = 0;       % toggle random start (see voluntary_jump.m) 
+eta_a = 0.7;            % actor learning rate
+eta_c = 0.7;            % critic learning rate
 
 %% Get environment map and coordinates of place cells
 % e.g. [map, cell_coord, platform_mask] = ...
@@ -38,22 +38,8 @@ random_start = 0;       % toggle random start (see voluntary_jump.m)
                                      platform_R,p_std,strict_place); 
 map_dims=size(map,2); % map dimensions
 
-%% Initialize start and end points
-% Define rat starting position.
-
-
 
 %% Actor-Critic loop
-%{
-TODO:
-
-* Every set of 4 trials must contain a different location.
-* Make trials end after 120 seconds
-      need to fix time first
-* Up to 22 trials
-* Close actor-critic loop
-
-%}
 
 % Initialize weights.
 % actor weights as named in the paper
@@ -62,83 +48,50 @@ w_critic      = zeros(P_Cels,1);  % weights of critic
 
 % init loop variables
 daily_trial = 0;
-pred_err    = 0;
+
 for trialN0=1:totalTrials
 
-    % reset each day
+    % reset every day
     if mod(trialN0-1,5) == 0 % every fourth trial 
-        rat_position_v = voluntary_jump(map_dims,pool_radius);
+        % get a mouse to do 4 voluntary jumps into the pool
+        v_rat_position = voluntary_jump(map_dims,pool_radius);
         daily_trial = 0; % reset platform iterator
     end
     
     % iterators
     daily_trial = daily_trial +1; % iterates through the platform positions
     
-    % reset each trial
-    Cprev = 0;
-    rat_position = rat_position_v(daily_trial,:);
+    % reset every trial
+    Cprev = 0; % Critic'opinion of the value function at t-1
+    pred_err = 0; % Critic's error
+    momentum = 0; % momentum of swimming rat
+    Reward = 0;
+    t = 0;
+    rat_position = v_rat_position(daily_trial,:); % get starting point
     
-    for t=1:length(timeline) % single trial loop
+    while t<=length(timeline) && ~Reward % single trial loop
+        
+        % iterators
+        t = t+1; % where t is timestep equal to 0.1s
         
         % get spike rates for place cells
-        
         spikeCounts = placeCells_spikeRate(rat_position,cell_coord,p_std);
+        % feed place cell activity, prediction error and weights to actor
+        [direction, z_ij_dx] = actor(act_Cells, spikeCounts, pred_err, z_ij);
+        % move the mouse 
+        [rat_position,momentum] = move_rat(rat_position,direction,momentum,map);
         
-        %% Actor choose an allowed action.
-        
-        % this needs to go away because the boundaries now are bouncy
-%         is_legal = 0; %
-%         while ~is_legal
-%             
-%             % Move the bloody rat.
-%             [updated_position] = move_rat (rat_position, direction);
-%             if map(updated_position(1,1), updated_position(1,2)) == 1
-%                 is_legal = 1;
-%             else
-%                 warning('Dumb rat wants to exit the swimming pool');
-%                 % dumb rat don't know no better
-%             end
-%         end
-        
-        % Momentum: 25% time, the actor decides on change of movement. The
-        % other 75% the mouse keeps going in a direction.
-        
-        [direction, z_ij_dx] = actor(act_Cells, pred_err, spikeCounts, z_ij);
-        if rand > 0.75
-            updated_position = direction;
-            momentum = updated_position-rat_position;
-        else
-            momentum = position-old_position;
-            updated_position = rat_position + momentum;
+        % check for reward
+        if platform(rat_position)
+            Reward = 1;
         end
-        
-        % check if the mouse hit the boundary. If it did, bounce it off.
-        if map(updated_position(1,1), updated_position(1,2)) == 0
-            updated_position = updated_position -2*momentum;
-        end
-        
-        % update positions
-        old_position     = rat_position; % needed to calculate momentum
-        rat_position     = updated_position;
-        
-        %% Critic Output:
-        % C : The critic's take of the value function
-        % dt: Prediction Error
-        % dw: change in weights
-        %% Critic Input:
-        % spikeCounts: accessible with placeCells_spikeRate()
-        % w_critic   : the weights of the critic
-        % Reward     : reward
-        % Cprev      : The C that is output by the critic in t-1, see below
-        % The value function is calculated with C_t+1, but since we can't
-        % predict the future we make everyhting go a step back in time.
         
         % [C-value fuction, prediction error, change in weights]
         [C,pred_err,dw]= Critic(spikeCounts,w_critic,Reward,Cprev);
         Cprev=C;
         
         % Update Weights
-        z_ij = z_ij + z_ij_dx; % actor
+        z_ij = z_ij + eta_a*z_ij_dx'; % actor
         w_critic= w_critic + eta_c*dw;  % critic
     end
 end
