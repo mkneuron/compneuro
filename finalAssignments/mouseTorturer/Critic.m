@@ -29,7 +29,7 @@ w  = w_critic;
 fi = spikeCounts;
 R  = Reward;
 g  = 0.9975;     % discount factor gamma for calculating expected reward
-C  = w'*fi;       
+C  = w'*fi/max([max(fi) max(w)]);       
 
 % implement dt = R -gamma*C_t+1 + C
 % as said in the end of the input section, we shift everything a timepoint
