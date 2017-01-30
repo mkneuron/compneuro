@@ -52,7 +52,7 @@ daily_trial = 0;
 for trialN0=1:totalTrials
 
     % reset every day
-    if mod(trialN0-1,5) == 0 % every fourth trial 
+    if mod(trialN0-1,4) == 0 % every fourth trial 
         % get a mouse to do 4 voluntary jumps into the pool
         v_rat_position = voluntary_jump(map_dims,pool_radius);
         daily_trial = 0; % reset platform iterator
@@ -72,7 +72,7 @@ for trialN0=1:totalTrials
     while t<=length(timeline) && ~Reward % single trial loop
         
         % iterators
-        t = t+1 % where t is timestep equal to 0.1s
+        t = t+1; % where t is timestep equal to 0.1s
         
         % get spike rates for place cells
         spikeCounts = placeCells_spikeRate(rat_position,cell_coord,p_std);
