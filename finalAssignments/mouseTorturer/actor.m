@@ -12,7 +12,7 @@ n0_plaCells = numel(spikeCounts);
 % direction when he is at location "current_position"
 
 P_movement_direction = zeros(1, act_Cells);
-actor_cell_activity= z_ij'*spikeCounts;
+actor_cell_activity= (z_ij'*spikeCounts)/max(max(abs(z_ij)));
 
 for j = 1:act_Cells
     P_movement_direction(j) = (exp(2*actor_cell_activity(j)))./...
