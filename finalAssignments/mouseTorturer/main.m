@@ -20,24 +20,24 @@ Plotting TODO:
 clc;clear all;close all;
 act_Cells = 8;          % equivalent to the number of possible actions
 P_Cels = 493;           % number of place cells
-pool_radius = 41;       % radius in cm (aka pixels ?)
+pool_radius = 80;       % radius in cm (aka pixels ?)
 platform_R = 6;         % platform radius in cm (aka pixels ?)
 p_std = 16;             % place cell std, aka sigma
-strict_place = 1;       % forbid place cell centers outside maze
-totalTrials = 22;       % number of total trials
+strict_place = 0;       % forbid place cell centers outside maze
+totalTrials = 23;       % number of total trials
 plat_posit = 1:4;       % number of platform positions
 timeline = 0:0.1:120;   % time as described in paper
-random_start = 0;       % toggle random start (see voluntary_jump.m) 
+random_start = 0;       % toggle random start (see voluntary_jump.m)
 eta_a = 0.7;            % actor learning rate
-eta_c = 0.7;            % critic learning rate
-plot_trials = 1:7:22;   % trials for which to plot
+eta_c = 0.4;            % critic learning rate
+plot_trials = 1:11:23;   % trials for which to plot
 pope = 'not me';        % a part of the code will run when I'm the pope
-% plot_trials = 1:22;
+%plot_trials = 1:22;
 %% Get environment map and coordinates of place cells
 % e.g. [map, cell_coord, platform_mask] = ...
 %       RL_env(Pcel, pool_radius, platform_R, p_std, strict_place)
 [map, cell_coord, platform] = RL_env(P_Cels,pool_radius, ...
-                                     platform_R,p_std,strict_place); 
+    platform_R,p_std,strict_place);
 map_dims=size(map,2); % map dimensions
 
 
@@ -45,8 +45,8 @@ map_dims=size(map,2); % map dimensions
 
 % Initialize weights.
 % actor weights as named in the paper
-z_ij          = ones(P_Cels, act_Cells); % weights place cell to actor
-w_critic      = ones(P_Cels,1);  % weights of critic
+z_ij          = zeros(P_Cels, act_Cells); % weights place cell to actor
+w_critic      = zeros(P_Cels,1);  % weights of critic
 
 % % init loggers
 p_log = zeros(size(map,1),size(map,2),totalTrials); % logs mouse path
@@ -58,9 +58,9 @@ C_log = zeros(size(map,1),size(map,2),totalTrials); % logs C-value function
 daily_trial = 0;
 
 for trialN0=1:totalTrials
-
+    
     % reset every day
-    if mod(trialN0-1,4) == 0 % every fourth trial 
+    if mod(trialN0-1,4) == 0 % every fourth trial
         % get a mouse to do 4 voluntary jumps into the pool
         v_rat_position = voluntary_jump(map_dims,pool_radius);
         daily_trial = 0; % reset platform iterator
@@ -87,8 +87,8 @@ for trialN0=1:totalTrials
         spikeCounts = placeCells_spikeRate(rat_position,cell_coord,p_std);
         % feed place cell activity, prediction error and weights to actor
         [direction, z_ij_dx] = actor(act_Cells, spikeCounts, pred_err, z_ij);
-        % move the mouse 
-        [rat_position, momentumm,trajectory] = ...
+        % move the mouse
+        [rat_position, momentum,trajectory] = ...
             move_rat(rat_position,direction,map,momentum);
         % check for reward
         if platform(rat_position(1),rat_position(2))
@@ -97,10 +97,14 @@ for trialN0=1:totalTrials
         end
         
         % log mouse movement
-        p_log(rat_position(1),rat_position(2),trialN0)= ...
-             p_log(rat_position(1),rat_position(2),trialN0) +1;
-        imagesc(p_log(:,:,trialN0)+platform)
-        drawnow;
+        for i=1:size(trajectory,1)
+            
+            p_log(trajectory(i,1),trajectory(i,2),trialN0)= ...
+                p_log(trajectory(i,1),trajectory(i,2),trialN0) +1;
+        end
+        
+%         imagesc(p_log(:,:,trialN0)+platform*50)
+%         drawnow;
         % [C-value fuction, prediction error, change in weights]
         [C,pred_err,dw]= Critic(spikeCounts,w_critic,Reward,Cprev);
         Cprev=C;
@@ -112,7 +116,7 @@ for trialN0=1:totalTrials
     
     
     % log critic's take of the value function for all positions
-    if any(trialN0==plot_trials) && strcmp(pope,'me')
+    if any(trialN0==plot_trials)
         for i = 1:size(map,1)
             for j = 1:size(map,2)
                 spikeCounts = placeCells_spikeRate([i,j],cell_coord,p_std);
@@ -120,21 +124,24 @@ for trialN0=1:totalTrials
                 C_log(i,j,trialN0) = C;
             end
         end
+        figure(trialN0)
+        surf(1:size(map,2),1:size(map,1),C_log(:,:,trialN0),'EdgeColor','none')
+        drawnow;
     end
 end
 
-
-for i = 1:numel(plot_trials)
-    
-    % plot path
-    figure(i)
-    imagesc(p_log(:,:,plot_trials(i))+platform)
-    title(['Mouse movement in trial ' num2str(plot_trials(i))]);
-    
-%     % plot value function
-%     figure(i+numel(plot_trials))
-%     surf(1:size(map,2),1:size(map,1),C_log(:,:,i))
-%     title(['C-value function at the end of trial' num2str(plot_trials(i))]);
-end
+%% plotting
+% for i = 1:numel(plot_trials)
+%     
+%     % plot path
+%     figure(i)
+%     imagesc(p_log(:,:,plot_trials(i))+platform)
+%     title(['Mouse movement in trial ' num2str(plot_trials(i))]);
+%     
+%         % plot value function
+%         figure(i+numel(plot_trials))
+%         surf(1:size(map,2),1:size(map,1),C_log(:,:,plot_trials(i)),'EdgeColor','none')
+%         title(['C-value function at the end of trial' num2str(plot_trials(i))]);
+% end
 
 % end % function end
