@@ -64,7 +64,7 @@ for trialN0=1:totalTrials
     % reset every trial
     Cprev = 0; % Critic'opinion of the value function at t-1
     pred_err = 0; % Critic's error
-    momentum = 0; % momentum of swimming rat
+    momentum = [0,0]; % momentum of swimming rat
     Reward = 0;
     t = 0;
     rat_position = v_rat_position(daily_trial,:); % get starting point
@@ -72,7 +72,7 @@ for trialN0=1:totalTrials
     while t<=length(timeline) && ~Reward % single trial loop
         
         % iterators
-        t = t+1; % where t is timestep equal to 0.1s
+        t = t+1 % where t is timestep equal to 0.1s
         
         % get spike rates for place cells
         spikeCounts = placeCells_spikeRate(rat_position,cell_coord,p_std);
