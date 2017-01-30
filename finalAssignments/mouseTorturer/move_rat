@@ -40,10 +40,11 @@ switch movement_tmp
 end
 
 % Move.
-current_position_x = current_p(1, 1);
-current_position_y = current_p(1, 2);
-new_p(1, 1) = current_position_x + movement(1, 1)+momentum*3;
-new_p(1, 2) = current_position_y + movement(1, 2)+momentum*3;
+% current_position_x = current_p(1, 1);
+% current_position_y = current_p(1, 2);
+new_p = current_p + movement + momentum*3;
+% new_p(1, 1) = current_position_x + movement(1, 1)+momentum*3;
+% new_p(1, 2) = current_position_y + movement(1, 2)+momentum*3;
 
 % check if the mouse hit the boundary. If it did, bounce it off.
 if any(new_p<1) || any(new_p>(size(map,1))) || map(new_p(1,1), new_p(1,2)) == 0 
