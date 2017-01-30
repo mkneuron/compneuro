@@ -1,4 +1,4 @@
-function [direction, z_ij_dx] = actor(act_Cells, spikeCounts, pred_err,z_ij)
+function [direction, z_ij_dx] = actor(act_Cells, spikeCounts, pred_err, z_ij)
 % INPUTS:
 % "spikeCounts" is a vector containing the firing rate for every place cell.
 % "z_ij" is the weight from the place cell i to the actor cell j.
@@ -12,13 +12,13 @@ n0_plaCells = numel(spikeCounts);
 % direction when he is at location "current_position"
 
 P_movement_direction = zeros(1, act_Cells);
-actor_cell_activity= (z_ij'*spikeCounts)/max(max(abs(z_ij)));
+actor_cell_activity= (z_ij'*spikeCounts)/max(max(max(abs(z_ij))),1);
 
 for j = 1:act_Cells
     P_movement_direction(j) = (exp(2*actor_cell_activity(j)))./...
                                  (sum(exp(2*actor_cell_activity)));
 end
-if sum(P_movement_direction) ~= 1
+if sum(P_movement_direction) >= 1+10^-6 || sum(P_movement_direction) <= 1-10^-6 % should be sum(P_movement_direction) == 1.
     warning('P_movement_direction is not normalized');
 end
 
@@ -26,15 +26,23 @@ end
 % Scroll the probabilities, if a random number is between a probability
 % value p1 and p1 + the next one, then chose the corresponding action. 
 random_selector = rand();
+lower_bound = 0;
 direction = zeros(1, act_Cells);
-cumulative = cumsum(P_movement_direction); % cumulative probabilities of action
-
 for j = 1:act_Cells
-    if (random_selector <= cumulative(j))
+    if (random_selector <= (P_movement_direction(1, j) + lower_bound)) && (random_selector > lower_bound)
         direction(1, j) = 1;
         break
     end
+    lower_bound = lower_bound + P_movement_direction(1, j);
 end
+% direction = zeros(1, act_Cells);
+% cumulative = cumsum(P_movement_direction); % cumulative probabilities of action
+% for j = 1:act_Cells
+%     if (random_selector <= cumulative(j))
+%         direction(1, j) = 1;
+%         break
+%     end
+% end
  
 %% Update weights given the prediction error from the Critic.
 
