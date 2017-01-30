@@ -15,14 +15,15 @@ function [updated_position, movement, trajectory] = move_rat(current_position, m
 % elements can have value of -1, 0, +1, depending on the direction on that
 % axis.
 momentum_memory = 3;
+movement_speed_adjust = 1;
 
 %% Defining movement direction.
 movement_tmp = find(movement_direction_selected);
 if isempty(movement_tmp)
-    fprintf('Lazy rat did not move.\n');
+    %fprintf('Lazy rat did not move.\n');
 end
 if ~isscalar(movement_tmp)
-    fprintf('Dumb rat (Actor) chose 2 movement directions!\n')
+    %fprintf('Dumb rat (Actor) chose 2 movement directions!\n')
 end
 
 % goddamn it Niccolo
@@ -51,25 +52,30 @@ end
 map_dimension = size(map,2);
 current_position_x = current_position(1, 1);
 current_position_y = current_position(1, 2);
-trajectory = zeros(momentum_memory, 2);
+trajectory = zeros((momentum_memory*movement_speed_adjust), 2);
+
 % Move by momentum.
-for i = 1:momentum_memory
+for i = 1:(momentum_memory*movement_speed_adjust)
     current_position_x = current_position_x + previous_movement(1, 1);
     if current_position_x >= map_dimension || current_position_x <= 0 % If it's outside the map matrix.
         previous_movement(1, 1) = - previous_movement(1, 1);
-        current_position_x = current_position_x + previous_movement(1, 1); % Bounce back on that direction
+        current_position_x = current_position_x + (momentum_memory - i + 1)*previous_movement(1, 1); % Bounce back on that direction
+        %fprintf('Rat (Momentum) wanted to go outside the swimming pool.\n');
     elseif map(current_position_x, current_position_y) == 0 % If it just went out of bondaries
         previous_movement(1, 1) = - previous_movement(1, 1);
-        current_position_x = current_position_x + previous_movement(1, 1); % Bounce back on that direction
+        current_position_x = current_position_x + (momentum_memory - i + 1)*previous_movement(1, 1); % Bounce back on that direction
+        %fprintf('Rat (Momentum) wanted to go outside the swimming pool.\n');
     end
     % Move y coordinate
         current_position_y = current_position_y + previous_movement(1, 2); 
     if current_position_y >= map_dimension || current_position_y <= 0 % If it's outside the map matrix.
         previous_movement(1, 2) = - previous_movement(1, 2);
-        current_position_y = current_position_y + previous_movement(1, 2); % Bounce back on that direction
+        current_position_y = current_position_y + (momentum_memory - i + 1)*previous_movement(1, 2); % Bounce back on that direction
+        %fprintf('Rat (Momentum) wanted to go outside the swimming pool.\n');
     elseif map(current_position_x, current_position_y) == 0 % If it just went out of the pool bondaries.
         previous_movement(1, 2) = - previous_movement(1, 2);
-        current_position_y = current_position_y + previous_movement(1, 2); % Bounce back on that direction
+        current_position_y = current_position_y + (momentum_memory - i + 1)*previous_movement(1, 2); % Bounce back on that direction
+        %fprintf('Rat (Momentum) wanted to go outside the swimming pool.\n');
     end
     trajectory(i,1) = current_position_x;
     trajectory(i,2) = current_position_y;
@@ -78,6 +84,7 @@ end
 % Move by actor.
 
 % Move x coordinate
+for i = 1:movement_speed_adjust
 current_position_x = current_position_x + movement(1, 1);
 if current_position_x >= map_dimension || current_position_x <= 0 % If it's outside the map matrix.
     movement(1, 1) = - movement(1, 1);
@@ -100,21 +107,21 @@ elseif map(current_position_x, current_position_y) == 0 % If it just went out of
     current_position_y = current_position_y + 2*movement(1, 2); % Bounce back on that direction
     %fprintf('Rat (Actor) wanted to go outside the swimming pool.\n');
 end
+trajectory(i + (momentum_memory*movement_speed_adjust) ,1) = current_position_x;
+trajectory(i + (momentum_memory*movement_speed_adjust), 2) = current_position_y;
+end
 updated_position(1, 1) = current_position_x;
 updated_position(1, 2) = current_position_y;
-trajectory(4,1) = current_position_x;
-trajectory(4,2) = current_position_y;
-% 
-% % Update momentum (movement)
-% movement = (movement + previous_movement)./2;
-% % These controls will prevent rounding bias.
-% if abs(movement(1,1)) == 0.5
-%     movement(1,1) = movement(1,1) + rand - 0.5;
-% end
-% if abs(movement(1,2)) == 0.5
-%     movement(1,2) = movement(1,2) + rand - 0.5;
-% end
-% movement = double(int16(movement));
+% Update momentum (movement)
+movement = (movement + previous_movement)./2;
+% These controls will prevent rounding bias.
+if abs(movement(1,1)) == 0.5
+    movement(1,1) = movement(1,1) + rand - 0.5;
+end
+if abs(movement(1,2)) == 0.5
+    movement(1,2) = movement(1,2) + rand - 0.5;
+end
+movement = double(int16(movement));
 
 % updated_position(1, 1) = current_position_x + movement(1, 1);
 % updated_position(1, 2) = current_position_y + movement(1, 2);
